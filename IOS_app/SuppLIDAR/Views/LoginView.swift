@@ -69,7 +69,7 @@ struct LoginView: View {
         Task {
             do {
                 let resp = isRegistering
-                    ? try await APIClient.shared.register(email: email)
+                    ? try await APIClient.shared.register(email: email, name: orgName, orgType: orgType)
                     : try await APIClient.shared.login(email: email)
                 await MainActor.run {
                     appState.login(

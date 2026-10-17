@@ -29,9 +29,11 @@ final class APIClient {
         let email: String
     }
 
-    func register(email: String) async throws -> SimpleAuthResponse {
+    func register(email: String, name: String, orgType: String = "donor") async throws -> SimpleAuthResponse {
         var req = try makeRequest(path: "/auth/register", method: "POST")
-        req.httpBody = try JSONSerialization.data(withJSONObject: ["email": email])
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "email": email, "name": name, "org_type": orgType
+        ])
         return try await send(req)
     }
 
