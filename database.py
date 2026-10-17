@@ -84,7 +84,7 @@ DATABASE_URL = "mysql+pymysql://supplidar:SuppLIDAR123!@127.0.0.1:3306/supplidar
 
 engine = create_engine(
     DATABASE_URL,
-    echo=True,           # Set to True if you want SQL queries printed in the terminal
+    echo=False,          # Set to True if you want SQL queries printed in the terminal
     pool_pre_ping=True,  # Re-checks connection health automatically
 )
 
