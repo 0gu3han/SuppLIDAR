@@ -2,15 +2,15 @@ import SwiftUI
 import ARKit
 import SceneKit
 
-/// Room scanning view. Uses RoomPlan on LiDAR-equipped devices,
-/// falls back to a placeholder box export on non-LiDAR devices.
 struct ScanView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) private var dismiss
+
     @State private var roomName = ""
     @State private var isScanning = false
-    @State private var isSaving = false
-    @State private var capturedFileURL: URL?
+    @State private var isUploading = false
+    @State private var uploadedRoomId: Int?
+    @State private var showDetection = false
     @State private var errorMessage = ""
 
     private var hasLiDAR: Bool {
@@ -20,10 +20,13 @@ struct ScanView: View {
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                if !isScanning {
-                    setupView
-                } else {
+                if let roomId = uploadedRoomId {
+                    // Step 3 — scan uploaded, prompt to detect items
+                    readyToDetectView(roomId: roomId)
+                } else if isScanning {
                     scanningView
+                } else {
+                    setupView
                 }
             }
             .navigationTitle("Scan Room")
@@ -34,7 +37,14 @@ struct ScanView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $showDetection, onDismiss: { dismiss() }) {
+            if let roomId = uploadedRoomId {
+                ItemDetectionView(roomId: roomId)
+            }
+        }
     }
+
+    // MARK: - Setup
 
     private var setupView: some View {
         VStack(spacing: 24) {
@@ -43,14 +53,11 @@ struct ScanView: View {
                 .foregroundColor(hasLiDAR ? .blue : .secondary)
 
             VStack(spacing: 8) {
-                Text(hasLiDAR ? "LiDAR Scan" : "Standard Scan")
-                    .font(.title2.bold())
+                Text(hasLiDAR ? "LiDAR Scan" : "Standard Scan").font(.title2.bold())
                 Text(hasLiDAR
                     ? "Your device supports high-accuracy LiDAR scanning."
-                    : "LiDAR not available. A placeholder room model will be created.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
+                    : "LiDAR not available. A placeholder room will be created.")
+                    .font(.subheadline).foregroundColor(.secondary).multilineTextAlignment(.center)
             }
 
             TextField("Room name (e.g. Storage Room B)", text: $roomName)
@@ -68,39 +75,79 @@ struct ScanView: View {
         .padding()
     }
 
+    // MARK: - Scanning
+
     private var scanningView: some View {
         VStack(spacing: 16) {
-            if hasLiDAR {
-                RoomPlanScanView(onComplete: { url in
-                    capturedFileURL = url
+            if isUploading {
+                VStack(spacing: 12) {
+                    ProgressView("Uploading scan...")
+                    Text("This may take a moment.").font(.caption).foregroundColor(.secondary)
+                }
+            } else if hasLiDAR {
+                RoomPlanScanView { url in
                     isScanning = false
-                })
+                    uploadScan(fileURL: url)
+                }
                 .ignoresSafeArea()
             } else {
                 Spacer()
-                ProgressView("Creating placeholder room...")
+                ProgressView("Creating room...")
                 Spacer()
             }
         }
     }
 
+    // MARK: - Ready to detect
+
+    private func readyToDetectView(roomId: Int) -> some View {
+        VStack(spacing: 24) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 64)).foregroundColor(.green)
+
+            VStack(spacing: 8) {
+                Text("Room Scanned!").font(.title2.bold())
+                Text("Now walk through the room and tap items to detect and tag them with OCI Vision.")
+                    .font(.subheadline).foregroundColor(.secondary).multilineTextAlignment(.center)
+            }
+
+            Button("Detect Items") { showDetection = true }
+                .buttonStyle(.borderedProminent)
+
+            Button("Skip for now") { dismiss() }
+                .foregroundColor(.secondary)
+        }
+        .padding()
+    }
+
+    // MARK: - Actions
+
     private func startScan() {
         if hasLiDAR {
             isScanning = true
         } else {
-            createPlaceholderRoom()
+            isScanning = true
+            isUploading = true
+            Task {
+                do {
+                    let fileURL = try exportPlaceholderUSDZ()
+                    let resp = try await APIClient.shared.createRoom(name: roomName, fileURL: fileURL)
+                    await MainActor.run { isUploading = false; uploadedRoomId = resp.room_id }
+                } catch {
+                    await MainActor.run { errorMessage = error.localizedDescription; isScanning = false; isUploading = false }
+                }
+            }
         }
     }
 
-    private func createPlaceholderRoom() {
-        isSaving = true
+    private func uploadScan(fileURL: URL) {
+        isUploading = true
         Task {
             do {
-                let fileURL = try exportPlaceholderUSDZ()
-                let _ = try await APIClient.shared.createRoom(name: roomName, fileURL: fileURL)
-                await MainActor.run { isSaving = false; dismiss() }
+                let resp = try await APIClient.shared.createRoom(name: roomName, fileURL: fileURL)
+                await MainActor.run { isUploading = false; uploadedRoomId = resp.room_id }
             } catch {
-                await MainActor.run { errorMessage = error.localizedDescription; isSaving = false }
+                await MainActor.run { errorMessage = error.localizedDescription; isUploading = false }
             }
         }
     }
@@ -109,9 +156,7 @@ struct ScanView: View {
         let scene = SCNScene()
         let box = SCNBox(width: 5, height: 3, length: 5, chamferRadius: 0)
         box.firstMaterial?.diffuse.contents = UIColor.systemGray5
-        let node = SCNNode(geometry: box)
-        scene.rootNode.addChildNode(node)
-
+        scene.rootNode.addChildNode(SCNNode(geometry: box))
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(UUID().uuidString).usdz")
         try scene.write(to: url, options: nil, delegate: nil, progressHandler: nil)
@@ -139,7 +184,6 @@ struct RoomPlanScanView: UIViewControllerRepresentable {
 final class RoomPlanViewController: UIViewController, RoomCaptureViewDelegate {
     var onComplete: ((URL) -> Void)?
     private var captureView: RoomCaptureView!
-    private var captureSession: RoomCaptureSession!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -147,9 +191,7 @@ final class RoomPlanViewController: UIViewController, RoomCaptureViewDelegate {
         captureView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         captureView.delegate = self
         view.addSubview(captureView)
-
-        let config = RoomCaptureSession.Configuration()
-        captureView.captureSession.run(with: config)
+        captureView.captureSession.run(with: RoomCaptureSession.Configuration())
     }
 
     func captureView(shouldPresent roomDataForProcessing: CapturedRoomData, error: Error?) -> Bool { true }
@@ -164,6 +206,6 @@ final class RoomPlanViewController: UIViewController, RoomCaptureViewDelegate {
 #else
 struct RoomPlanScanView: View {
     let onComplete: (URL) -> Void
-    var body: some View { Text("RoomPlan not available") }
+    var body: some View { Text("RoomPlan not available on this device") }
 }
 #endif

@@ -68,13 +68,25 @@ struct LoginView: View {
         errorMessage = ""
         Task {
             do {
-                let response: LoginResponse
+                let (userId, email): (Int, String)
                 if isRegistering {
-                    response = try await APIClient.shared.register(orgName: orgName, orgType: orgType, email: email)
+                    // Register — server only needs email for now
+                    let resp = try await APIClient.shared.register(email: email)
+                    userId = resp.user_id
+                    email  = resp.email
                 } else {
-                    response = try await APIClient.shared.login(email: email)
+                    let resp = try await APIClient.shared.login(email: email)
+                    userId = resp.user_id
+                    email  = resp.email
                 }
-                await MainActor.run { appState.login(response: response) }
+                await MainActor.run {
+                    appState.login(
+                        userId: userId,
+                        email: email,
+                        orgName: isRegistering ? orgName : (UserDefaults.standard.string(forKey: "orgName") ?? ""),
+                        orgType: isRegistering ? orgType : (UserDefaults.standard.string(forKey: "orgType") ?? "donor")
+                    )
+                }
             } catch {
                 await MainActor.run {
                     errorMessage = error.localizedDescription

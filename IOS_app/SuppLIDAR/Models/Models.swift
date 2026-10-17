@@ -58,11 +58,16 @@ struct SurplusItem: Codable, Identifiable {
 
     var statusColor: String {
         switch status {
-        case "surplus":     return "green"
-        case "claimed":     return "orange"
-        case "transferred": return "gray"
-        case "in_use":      return "red"
-        default:            return "yellow"
+        case "surplus":
+            return "green"
+        case "claimed":
+            return "orange"
+        case "transferred":
+            return "gray"
+        case "in_use":
+            return "red"
+        default:
+            return "yellow"
         }
     }
 }
@@ -140,9 +145,12 @@ enum APIError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .badURL:         return "Invalid URL"
-        case .server(let m): return m
-        case .decode(let e): return "Decode error: \(e.localizedDescription)"
+        case .badURL:
+            return "Invalid URL"
+        case .server(let m):
+            return m
+        case .decode(let e):
+            return "Decode error: \(e.localizedDescription)"
         }
     }
 }

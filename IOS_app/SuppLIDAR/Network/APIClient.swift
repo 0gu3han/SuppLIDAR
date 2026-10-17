@@ -24,15 +24,18 @@ final class APIClient {
 
     // MARK: - Auth
 
-    func register(orgName: String, orgType: String, email: String) async throws -> LoginResponse {
+    struct SimpleAuthResponse: Codable {
+        let user_id: Int
+        let email: String
+    }
+
+    func register(email: String) async throws -> SimpleAuthResponse {
         var req = try makeRequest(path: "/auth/register", method: "POST")
-        req.httpBody = try JSONSerialization.data(withJSONObject: [
-            "org_name": orgName, "org_type": orgType, "email": email
-        ])
+        req.httpBody = try JSONSerialization.data(withJSONObject: ["email": email])
         return try await send(req)
     }
 
-    func login(email: String) async throws -> LoginResponse {
+    func login(email: String) async throws -> SimpleAuthResponse {
         var req = try makeRequest(path: "/auth/login", method: "POST")
         req.httpBody = try JSONSerialization.data(withJSONObject: ["email": email])
         return try await send(req)
@@ -40,22 +43,22 @@ final class APIClient {
 
     // MARK: - Rooms
 
-    func listRooms(orgId: Int? = nil) async throws -> [Room] {
+    func listRooms() async throws -> [Room] {
         struct Wrapper: Codable { let rooms: [Room] }
-        let oid = orgId ?? self.orgId ?? 0
-        let req = try makeRequest(path: "/rooms?org_id=\(oid)")
+        guard let uid = userId else { throw APIError.server("Not logged in") }
+        let req = try makeRequest(path: "/rooms?user_id=\(uid)")
         return try await (send(req) as Wrapper).rooms
     }
 
     func createRoom(name: String, fileURL: URL) async throws -> CreateRoomResponse {
-        guard let oid = orgId else { throw APIError.server("Not logged in") }
+        guard let uid = userId else { throw APIError.server("Not logged in") }
         guard let url = URL(string: "\(baseURL)/rooms") else { throw APIError.badURL }
         let boundary = UUID().uuidString
         var req = URLRequest(url: url, timeoutInterval: 300)
         req.httpMethod = "POST"
         req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         let body = try buildMultipart(boundary: boundary, fields: [
-            ("org_id", "\(oid)"), ("name", name)
+            ("user_id", "\(uid)"), ("name", name)
         ], fileURL: fileURL, fileField: "file")
         let (data, resp) = try await session.upload(for: req, from: body)
         try checkStatus(data: data, response: resp)
@@ -142,6 +145,39 @@ final class APIClient {
         let (data, resp) = try await session.upload(for: req, from: body)
         try checkStatus(data: data, response: resp)
         return try decoder.decode(PhotoAnalysisResponse.self, from: data)
+    }
+
+    // MARK: - OCI Detection
+
+    func detectPhoto(imageData: Data, ext: String = "jpg") async throws -> DetectionResult {
+        guard let url = URL(string: "\(baseURL)/detect/photo") else { throw APIError.badURL }
+        let boundary = UUID().uuidString
+        var req = URLRequest(url: url, timeoutInterval: 60)
+        req.httpMethod = "POST"
+        req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+        let crlf = "\r\n"
+        body.append("--\(boundary)\(crlf)".utf8Data)
+        body.append("Content-Disposition: form-data; name=\"photo\"; filename=\"photo.\(ext)\"\(crlf)".utf8Data)
+        body.append("Content-Type: image/\(ext)\(crlf)\(crlf)".utf8Data)
+        body.append(imageData)
+        body.append("\(crlf)--\(boundary)--\(crlf)".utf8Data)
+
+        let (data, resp) = try await session.upload(for: req, from: body)
+        try checkStatus(data: data, response: resp)
+        return try decoder.decode(DetectionResult.self, from: data)
+    }
+
+    // MARK: - Objects
+
+    func createObject(anchorId: Int, title: String, kind: String = "text", body bodyStr: String = "") async throws -> Int {
+        struct Resp: Codable { let object_id: Int }
+        var req = try makeRequest(path: "/objects", method: "POST")
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "anchor_id": anchorId, "title": title, "kind": kind, "body": bodyStr
+        ])
+        return try await (send(req) as Resp).object_id
     }
 
     // MARK: - Search
