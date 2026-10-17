@@ -283,7 +283,7 @@ struct ItemDetectionARView: UIViewRepresentable {
         }
 
         @objc func handleTap(_ sender: UITapGestureRecognizer) {
-            guard let sceneView, !vm.isAnalyzing else { return }
+            guard let sceneView else { return }
             let location = sender.location(in: sceneView)
 
             // Raycast for world position
@@ -305,8 +305,9 @@ struct ItemDetectionARView: UIViewRepresentable {
             guard let frame = sceneView.session.currentFrame else { return }
             guard let imageData = captureFrame(frame) else { return }
 
-            Task {
-                await vm.detect(roomId: roomId, imageData: imageData, pos: pos, normal: normal, sceneView: sceneView)
+            Task { @MainActor [weak self] in
+                guard let self, !self.vm.isAnalyzing else { return }
+                await self.vm.detect(roomId: roomId, imageData: imageData, pos: pos, normal: normal, sceneView: sceneView)
             }
         }
 
