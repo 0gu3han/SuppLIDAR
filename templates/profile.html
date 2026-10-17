@@ -5,50 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SuppLIDAR - My Profile</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-        .auth-banner { background: #fff3cd; padding: 12px; border: 1px solid #ffeeba; border-radius: 6px; text-align: center; margin-bottom: 25px; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
+        .auth-banner { background: #fff3cd; padding: 12px; border: 1px solid #ffeeba; border-radius: 6px; text-align: center; margin-bottom: 20px; }
         .btn-auth { background: #27ae60; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; }
-        .profile-section { border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-        .section-title { margin-top: 0; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .inventory-list, .room-list { background: #f9f9f9; padding: 15px; border-radius: 6px; }
+
+        /* Two-Column Sidebar Layout */
+        .profile-container { display: flex; gap: 25px; align-items: flex-start; }
+
+        /* Main Area (Left Column - Profile Settings) */
+        .main-content { flex: 2; background: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .section-title { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .info-group p { margin: 12px 0; font-size: 1rem; color: #333; }
+        .btn-edit { background: #3498db; color: white; border: none; padding: 10px 18px; border-radius: 5px; cursor: pointer; margin-top: 15px; }
+
+        /* Sidebar Options (Right Column) */
+        .sidebar { flex: 1; background: #ffffff; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .sidebar-title { margin-top: 0; font-size: 1.2rem; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .sidebar-menu { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
+        .menu-btn { display: block; width: 100%; padding: 12px 15px; background: #f1f3f5; border: 1px solid #ced4da; border-radius: 6px; text-align: left; font-size: 0.95rem; color: #333; text-decoration: none; cursor: pointer; box-sizing: border-box; }
+        .menu-btn.active { background: #2c3e50; color: #ffffff; border-color: #2c3e50; font-weight: bold; }
+        .menu-btn:hover:not(.active) { background: #e9ecef; }
     </style>
 </head>
 <body>
 
-    <!-- Classic Auth Prompt -->
+    <div class="header">
+        <h2>Dashboard</h2>
+        <a href="/" style="text-decoration: none;">← Back to Home</a>
+    </div>
+
+    <!-- Auth Banner -->
     <div class="auth-banner">
         <span>Not logged in? </span>
         <a href="/login" class="btn-auth">Login or Register</a>
     </div>
 
-    <h2>My Dashboard</h2>
+    <!-- Dashboard Split Layout -->
+    <div class="profile-container">
 
-    <!-- Option 1: Profile Settings -->
-    <div class="profile-section">
-        <h3 class="section-title">1. Profile Settings</h3>
-        <p><strong>Organization Name:</strong> Vanderbilt Community Pantry</p>
-        <p><strong>Account Type:</strong> Recipient Charity</p>
-        <p><strong>Email:</strong> contact@vandyfoodpantry.org</p>
-        <button>Edit Profile Settings</button>
-    </div>
+        <!-- Main Left Content: Shows Profile Settings -->
+        <div class="main-content">
+            <h3 class="section-title">Profile Settings</h3>
 
-    <!-- Option 2: Inventory Management -->
-    <div class="profile-section">
-        <h3 class="section-title">2. My Inventory</h3>
-        <button style="margin-bottom: 15px;">+ Add New Inventory Item</button>
-        <div class="inventory-list">
-            <p>• 10x Office Chairs (Listed on Oct 17)</p>
-            <p>• 2x Whiteboards (Claimed by Local School)</p>
+            <div class="info-group">
+                <p><strong>Organization Name:</strong> Vanderbilt Community Pantry</p>
+                <p><strong>Account Type:</strong> Recipient Charity</p>
+                <p><strong>Primary Email:</strong> contact@vandyfoodpantry.org</p>
+                <p><strong>Contact Phone:</strong> (615) 555-0199</p>
+                <p><strong>Location:</strong> Nashville, TN</p>
+            </div>
+
+            <button class="btn-edit">Edit Profile Settings</button>
         </div>
-    </div>
 
-    <!-- Option 3: Scanned Rooms -->
-    <div class="profile-section">
-        <h3 class="section-title">3. Scanned Rooms</h3>
-        <div class="room-list">
-            <p>📦 <strong>Room Scan #104:</strong> Dining Hall Storage (34 items detected via LiDAR)</p>
-            <p>📦 <strong>Room Scan #102:</strong> Science Lab 2B (8 equipment items detected)</p>
+        <!-- Right Side Menu Options -->
+        <div class="sidebar">
+            <h3 class="sidebar-title">Menu Options</h3>
+            <div class="sidebar-menu">
+                <a href="/profile" class="menu-btn active">⚙️ Profile Settings</a>
+                <a href="/inventory" class="menu-btn">📦 My Inventory</a>
+                <a href="/scanned-rooms" class="menu-btn">📡 Scanned Rooms</a>
+            </div>
         </div>
+
     </div>
 
 </body>
