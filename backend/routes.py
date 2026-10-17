@@ -1,7 +1,7 @@
 import os
 import uuid
 from flask import Blueprint, request, send_from_directory
-from models import db, User, Room, Anchor, Object
+from models import db, Organization, Room, Anchor, Object, Item, Request, TransactionHistory
 from utils import allowed_scan, allowed_image
 import oci_client
 
@@ -24,15 +24,18 @@ def health():
 @bp.route("/auth/register", methods=["POST"])
 def register():
     data = request.json or {}
-    email = data.get("email", "").strip()
-    if not email:
-        return {"error": "email required"}, 400
-    if User.query.filter_by(email=email).first():
+    email    = data.get("email", "").strip()
+    name     = data.get("name", data.get("org_name", "")).strip()
+    org_type = data.get("org_type", "donor")
+    if not email or not name:
+        return {"error": "email and name required"}, 400
+    if Organization.query.filter_by(email=email).first():
         return {"error": "An account with that email already exists."}, 409
-    user = User(email=email)
-    db.session.add(user)
+    org = Organization(name=name, email=email, org_type=org_type)
+    db.session.add(org)
     db.session.commit()
-    return {"user_id": user.id, "email": user.email}, 201
+    return {"user_id": org.id, "org_id": org.id, "org_type": org.org_type,
+            "org_name": org.name, "email": org.email}, 201
 
 
 @bp.route("/auth/login", methods=["POST"])
@@ -41,10 +44,11 @@ def login():
     email = data.get("email", "").strip()
     if not email:
         return {"error": "email required"}, 400
-    user = User.query.filter_by(email=email).first()
-    if not user:
+    org = Organization.query.filter_by(email=email).first()
+    if not org:
         return {"error": "No account found for that email."}, 404
-    return {"user_id": user.id, "email": user.email}
+    return {"user_id": org.id, "org_id": org.id, "org_type": org.org_type,
+            "org_name": org.name, "email": org.email}
 
 
 # ---------------------------------------------------------------------------
@@ -53,17 +57,15 @@ def login():
 
 @bp.route("/rooms", methods=["GET"])
 def list_rooms():
+    org_id  = request.args.get("org_id",  type=int)
     user_id = request.args.get("user_id", type=int)
     q = Room.query
-    if user_id:
-        q = q.filter_by(user_id=user_id)
+    if org_id:
+        q = q.filter_by(org_id=org_id)
+    elif user_id:
+        q = q.filter_by(org_id=user_id)
     rooms = [
-        {
-            "id": r.id,
-            "name": r.name,
-            "scan_url": r.glb_path,
-            "created_at": r.created_at.isoformat(),
-        }
+        {"id": r.id, "name": r.name, "scan_url": r.glb_path, "created_at": r.created_at.isoformat()}
         for r in q.order_by(Room.created_at.desc()).all()
     ]
     return {"rooms": rooms}
@@ -71,18 +73,18 @@ def list_rooms():
 
 @bp.route("/rooms", methods=["POST"])
 def create_room():
-    user_id = request.form.get("user_id")
-    name = request.form.get("name", "My Room")
-    f = request.files.get("file")
+    org_id  = request.form.get("org_id") or request.form.get("user_id")
+    name    = request.form.get("name", "My Room")
+    f       = request.files.get("file")
 
-    if not (user_id and f and allowed_scan(f.filename)):
-        return {"error": "user_id and scan file (glb/gltf/obj/usdz) required"}, 400
+    if not (org_id and f and allowed_scan(f.filename)):
+        return {"error": "org_id and scan file (glb/gltf/obj/usdz) required"}, 400
 
-    ext = f.filename.rsplit(".", 1)[1].lower()
+    ext      = f.filename.rsplit(".", 1)[1].lower()
     file_data = f.read()
-    scan_url = oci_client.upload_scan(file_data, ext)
+    scan_url  = oci_client.upload_scan(file_data, ext)
 
-    room = Room(user_id=int(user_id), name=name, glb_path=scan_url)
+    room = Room(org_id=int(org_id), name=name, glb_path=scan_url)
     db.session.add(room)
     db.session.commit()
     return {"room_id": room.id, "name": room.name, "scan_url": scan_url}, 201
@@ -223,5 +225,137 @@ def detect_photo():
 
 
 # ---------------------------------------------------------------------------
-# TODO (friend's models needed): /items, /claims, /impact
+# Items
 # ---------------------------------------------------------------------------
+
+def _item_dict(item):
+    return {
+        "id":              item.id,
+        "owner_org_id":    item.owner_org_id,
+        "title":           item.title,
+        "description":     item.description or "",
+        "category":        item.category,
+        "status":          item.status,
+        "custom_metadata": item.custom_metadata or {},
+        "created_at":      item.created_at.isoformat(),
+    }
+
+
+@bp.route("/items", methods=["GET"])
+def list_items():
+    org_id   = request.args.get("org_id",   type=int)
+    status   = request.args.get("status")
+    category = request.args.get("category")
+    q = Item.query
+    if org_id:
+        q = q.filter_by(owner_org_id=org_id)
+    if status:
+        q = q.filter_by(status=status)
+    if category:
+        q = q.filter_by(category=category)
+    return {"items": [_item_dict(i) for i in q.order_by(Item.created_at.desc()).all()]}
+
+
+@bp.route("/items", methods=["POST"])
+def create_item():
+    data = request.json or {}
+    required = ["owner_org_id", "title", "category"]
+    if any(k not in data for k in required):
+        return {"error": f"{', '.join(required)} required"}, 400
+    item = Item(
+        owner_org_id=int(data["owner_org_id"]),
+        title=data["title"],
+        description=data.get("description"),
+        category=data["category"],
+        status=data.get("status", "available"),
+        custom_metadata=data.get("custom_metadata"),
+    )
+    db.session.add(item)
+    db.session.commit()
+    return {"item_id": item.id}, 201
+
+
+@bp.route("/items/<int:item_id>", methods=["PATCH"])
+def update_item(item_id):
+    item = Item.query.get_or_404(item_id)
+    data = request.json or {}
+    for field in ["title", "description", "category", "status", "custom_metadata"]:
+        if field in data:
+            setattr(item, field, data[field])
+    db.session.commit()
+    return _item_dict(item)
+
+
+# ---------------------------------------------------------------------------
+# Requests
+# ---------------------------------------------------------------------------
+
+def _request_dict(req):
+    return {
+        "id":                   req.id,
+        "item_id":              req.item_id,
+        "requester_org_id":     req.requester_org_id,
+        "request_type":         req.request_type,
+        "borrow_duration_days": req.borrow_duration_days,
+        "status":               req.status,
+        "created_at":           req.created_at.isoformat(),
+    }
+
+
+@bp.route("/requests", methods=["POST"])
+def create_request():
+    data = request.json or {}
+    required = ["item_id", "requester_org_id"]
+    if any(k not in data for k in required):
+        return {"error": f"{', '.join(required)} required"}, 400
+    item = Item.query.get_or_404(int(data["item_id"]))
+    if item.status not in ("available",):
+        return {"error": "Item is not available."}, 409
+    req = Request(
+        item_id=item.id,
+        requester_org_id=int(data["requester_org_id"]),
+        request_type=data.get("request_type", "permanent_transfer"),
+        borrow_duration_days=data.get("borrow_duration_days"),
+    )
+    item.status = "requested"
+    db.session.add(req)
+    db.session.commit()
+    return {"request_id": req.id}, 201
+
+
+@bp.route("/requests", methods=["GET"])
+def list_requests():
+    org_id = request.args.get("org_id", type=int)
+    role   = request.args.get("role", "donor")
+    q = Request.query
+    if org_id and role == "recipient":
+        q = q.filter_by(requester_org_id=org_id)
+    elif org_id and role == "donor":
+        q = q.join(Item).filter(Item.owner_org_id == org_id)
+    return {"requests": [_request_dict(r) for r in q.order_by(Request.created_at.desc()).all()]}
+
+
+@bp.route("/requests/<int:req_id>", methods=["PATCH"])
+def update_request(req_id):
+    req  = Request.query.get_or_404(req_id)
+    data = request.json or {}
+    new_status = data.get("status")
+    if new_status not in {"approved", "rejected", "completed"}:
+        return {"error": "status must be approved, rejected, or completed"}, 400
+    req.status = new_status
+    item = Item.query.get(req.item_id)
+    if item:
+        if new_status == "completed":
+            item.status = "gone"
+            history = TransactionHistory(
+                item_id=item.id,
+                item_title=item.title,
+                donor_org_id=item.owner_org_id,
+                recipient_org_id=req.requester_org_id,
+                transaction_type=req.request_type,
+            )
+            db.session.add(history)
+        elif new_status == "rejected":
+            item.status = "available"
+    db.session.commit()
+    return {"ok": True, "status": req.status}
