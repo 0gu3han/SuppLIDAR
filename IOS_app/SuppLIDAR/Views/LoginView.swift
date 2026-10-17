@@ -68,21 +68,13 @@ struct LoginView: View {
         errorMessage = ""
         Task {
             do {
-                let (userId, email): (Int, String)
-                if isRegistering {
-                    // Register — server only needs email for now
-                    let resp = try await APIClient.shared.register(email: email)
-                    userId = resp.user_id
-                    email  = resp.email
-                } else {
-                    let resp = try await APIClient.shared.login(email: email)
-                    userId = resp.user_id
-                    email  = resp.email
-                }
+                let resp = isRegistering
+                    ? try await APIClient.shared.register(email: email)
+                    : try await APIClient.shared.login(email: email)
                 await MainActor.run {
                     appState.login(
-                        userId: userId,
-                        email: email,
+                        userId: resp.user_id,
+                        email: resp.email,
                         orgName: isRegistering ? orgName : (UserDefaults.standard.string(forKey: "orgName") ?? ""),
                         orgType: isRegistering ? orgType : (UserDefaults.standard.string(forKey: "orgType") ?? "donor")
                     )
