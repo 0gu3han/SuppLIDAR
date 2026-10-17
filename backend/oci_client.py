@@ -56,8 +56,8 @@ def upload_file(file_data: bytes, object_name: str, content_type: str = "applica
     """Upload bytes to OCI Object Storage. Returns the public object URL."""
     if USE_LOCAL:
         upload_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "uploads"))
-        os.makedirs(upload_dir, exist_ok=True)
         path = os.path.join(upload_dir, object_name)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "wb") as f:
             f.write(file_data)
         return f"/uploads/{object_name}"

@@ -267,23 +267,111 @@ struct RoomPlanScanView: UIViewControllerRepresentable {
 final class RoomPlanViewController: UIViewController, RoomCaptureViewDelegate {
     var onComplete: ((URL) -> Void)?
     private var captureView: RoomCaptureView!
+    private var doneButton: UIButton!
+    private var processingOverlay: UIView!
+    private var isProcessing = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        captureView = RoomCaptureView(frame: view.bounds)
-        captureView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.backgroundColor = .black
+
+        // RoomCaptureView — fills screen and renders live 3D mesh automatically
+        captureView = RoomCaptureView(frame: .zero)
+        captureView.translatesAutoresizingMaskIntoConstraints = false
         captureView.delegate = self
         view.addSubview(captureView)
+        NSLayoutConstraint.activate([
+            captureView.topAnchor.constraint(equalTo: view.topAnchor),
+            captureView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            captureView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            captureView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        ])
+
+        // "Done Scanning" button overlay
+        doneButton = UIButton(type: .system)
+        doneButton.setTitle("Done Scanning", for: .normal)
+        doneButton.titleLabel?.font = .boldSystemFont(ofSize: 18)
+        doneButton.setTitleColor(.white, for: .normal)
+        doneButton.backgroundColor = .systemBlue
+        doneButton.layer.cornerRadius = 14
+        doneButton.layer.shadowColor = UIColor.black.cgColor
+        doneButton.layer.shadowOpacity = 0.35
+        doneButton.layer.shadowOffset = CGSize(width: 0, height: 2)
+        doneButton.translatesAutoresizingMaskIntoConstraints = false
+        doneButton.addTarget(self, action: #selector(stopScan), for: .touchUpInside)
+        view.addSubview(doneButton)
+        NSLayoutConstraint.activate([
+            doneButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -24),
+            doneButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            doneButton.widthAnchor.constraint(equalToConstant: 210),
+            doneButton.heightAnchor.constraint(equalToConstant: 52),
+        ])
+
+        // Processing overlay (hidden until Done is tapped)
+        processingOverlay = UIView()
+        processingOverlay.backgroundColor = UIColor.black.withAlphaComponent(0.65)
+        processingOverlay.translatesAutoresizingMaskIntoConstraints = false
+        processingOverlay.isHidden = true
+        let spinner = UIActivityIndicatorView(style: .large)
+        spinner.color = .white
+        spinner.startAnimating()
+        let msgLabel = UILabel()
+        msgLabel.text = "Building 3D model…"
+        msgLabel.textColor = .white
+        msgLabel.font = .systemFont(ofSize: 17, weight: .medium)
+        let stack = UIStackView(arrangedSubviews: [spinner, msgLabel])
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 14
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        processingOverlay.addSubview(stack)
+        view.addSubview(processingOverlay)
+        NSLayoutConstraint.activate([
+            processingOverlay.topAnchor.constraint(equalTo: view.topAnchor),
+            processingOverlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            processingOverlay.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            processingOverlay.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            stack.centerXAnchor.constraint(equalTo: processingOverlay.centerXAnchor),
+            stack.centerYAnchor.constraint(equalTo: processingOverlay.centerYAnchor),
+        ])
+
         captureView.captureSession.run(configuration: RoomCaptureSession.Configuration())
     }
 
-    func captureView(shouldPresent roomDataForProcessing: CapturedRoomData, error: Error?) -> Bool { true }
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if !isProcessing {
+            captureView.captureSession.stop(pauseARSession: true)
+        }
+    }
+
+    @objc private func stopScan() {
+        guard !isProcessing else { return }
+        isProcessing = true
+        doneButton.isHidden = true
+        processingOverlay.isHidden = false
+        captureView.captureSession.stop(pauseARSession: false)
+    }
+
+    // MARK: - RoomCaptureViewDelegate
+
+    func captureView(shouldPresent roomDataForProcessing: CapturedRoomData, error: Error?) -> Bool {
+        return error == nil
+    }
 
     func captureView(didPresent processedResult: CapturedRoom, error: Error?) {
         let dest = FileManager.default.temporaryDirectory
             .appendingPathComponent("\(UUID().uuidString).usdz")
-        try? processedResult.export(to: dest)
-        DispatchQueue.main.async { self.onComplete?(dest) }
+        do {
+            try processedResult.export(to: dest)
+            DispatchQueue.main.async { self.onComplete?(dest) }
+        } catch {
+            DispatchQueue.main.async {
+                self.processingOverlay.isHidden = true
+                self.doneButton.isHidden = false
+                self.isProcessing = false
+            }
+        }
     }
 }
 #else
