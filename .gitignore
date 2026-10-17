@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env
+backend/uploads/
+instance/
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+*.DS_Store
+*.ipa
+
+# Misc
+.DS_Store

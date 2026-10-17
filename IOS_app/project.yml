@@ -1,0 +1,27 @@
+name: SuppLIDAR
+options:
+  bundleIdPrefix: com.supplidar
+  deploymentTarget:
+    iOS: "16.0"
+  xcodeVersion: "15"
+
+targets:
+  SuppLIDAR:
+    type: application
+    platform: iOS
+    sources:
+      - SuppLIDAR
+    info:
+      path: SuppLIDAR/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.supplidar.app
+        SWIFT_VERSION: "5.9"
+        TARGETED_DEVICE_FAMILY: "1"
+    dependencies:
+      - sdk: ARKit.framework
+        weak: false
+      - sdk: RoomPlan.framework
+        weak: true
+      - sdk: SceneKit.framework
+        weak: false
