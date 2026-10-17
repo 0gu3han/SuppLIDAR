@@ -80,14 +80,18 @@ def create_room():
     if not (org_id and f and allowed_scan(f.filename)):
         return {"error": "org_id and scan file (glb/gltf/obj/usdz) required"}, 400
 
-    ext      = f.filename.rsplit(".", 1)[1].lower()
-    file_data = f.read()
-    scan_url  = oci_client.upload_scan(file_data, ext)
+    try:
+        ext       = f.filename.rsplit(".", 1)[1].lower()
+        file_data = f.read()
+        scan_url  = oci_client.upload_scan(file_data, ext)
 
-    room = Room(org_id=int(org_id), name=name, glb_path=scan_url)
-    db.session.add(room)
-    db.session.commit()
-    return {"room_id": room.id, "name": room.name, "scan_url": scan_url}, 201
+        room = Room(org_id=int(org_id), name=name, glb_path=scan_url)
+        db.session.add(room)
+        db.session.commit()
+        return {"room_id": room.id, "name": room.name, "scan_url": scan_url}, 201
+    except Exception as e:
+        db.session.rollback()
+        return {"error": str(e)}, 500
 
 
 @bp.route("/rooms/<int:room_id>", methods=["DELETE"])

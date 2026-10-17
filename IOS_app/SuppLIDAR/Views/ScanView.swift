@@ -396,7 +396,7 @@ final class LiDARScanViewController: UIViewController, ARSCNViewDelegate {
 
     private func meshMaterial() -> SCNMaterial {
         let mat = SCNMaterial()
-        mat.diffuse.contents = UIColor(red: 0.4, green: 0.851, blue: 0.8, alpha: 0.35)
+        mat.diffuse.contents = UIColor.systemBlue.withAlphaComponent(0.85)
         mat.isDoubleSided = true
         mat.lightingModel = .constant
         mat.fillMode = .lines
