@@ -191,7 +191,7 @@ final class RoomPlanViewController: UIViewController, RoomCaptureViewDelegate {
         captureView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         captureView.delegate = self
         view.addSubview(captureView)
-        captureView.captureSession.run(with: RoomCaptureSession.Configuration())
+        captureView.captureSession.run(configuration: RoomCaptureSession.Configuration())
     }
 
     func captureView(shouldPresent roomDataForProcessing: CapturedRoomData, error: Error?) -> Bool { true }
