@@ -82,19 +82,11 @@ struct ScanView: View {
     // MARK: - Scanning
 
     private var scanningView: some View {
-        VStack {
-            if hasLiDAR {
-                RoomPlanScanView { url in
-                    capturedURL = url
-                    phase = .previewing
-                }
-                .ignoresSafeArea()
-            } else {
-                Spacer()
-                ProgressView("Building 3D room model...")
-                Spacer()
-            }
+        LiDARScanView { url in
+            capturedURL = url
+            phase = .previewing
         }
+        .ignoresSafeArea()
     }
 
     // MARK: - 3D Preview
@@ -166,20 +158,7 @@ struct ScanView: View {
 
     private func startScan() {
         errorMessage = ""
-        if hasLiDAR {
-            phase = .scanning
-        } else {
-            phase = .scanning
-            Task {
-                do {
-                    let url  = try exportPlaceholderUSDZ()
-                    capturedURL = url
-                    await MainActor.run { phase = .previewing }
-                } catch {
-                    await MainActor.run { errorMessage = error.localizedDescription; phase = .setup }
-                }
-            }
-        }
+        phase = .scanning
     }
 
     private func uploadScan() {
@@ -195,16 +174,6 @@ struct ScanView: View {
         }
     }
 
-    private func exportPlaceholderUSDZ() throws -> URL {
-        let scene = SCNScene()
-        let box = SCNBox(width: 5, height: 3, length: 5, chamferRadius: 0)
-        box.firstMaterial?.diffuse.contents = UIColor.systemGray5
-        scene.rootNode.addChildNode(SCNNode(geometry: box))
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("\(UUID().uuidString).usdz")
-        try scene.write(to: url, options: nil, delegate: nil, progressHandler: nil)
-        return url
-    }
 }
 
 // MARK: - SceneKit 3D Model Viewer
@@ -247,47 +216,48 @@ struct SceneKitModelView: UIViewRepresentable {
     }
 }
 
-// MARK: - RoomPlan wrapper (LiDAR only)
+// MARK: - ARKit LiDAR Scanner with live mesh (same approach as MENTIS)
 
-#if canImport(RoomPlan)
-import RoomPlan
-
-struct RoomPlanScanView: UIViewControllerRepresentable {
+struct LiDARScanView: UIViewControllerRepresentable {
     let onComplete: (URL) -> Void
 
-    func makeUIViewController(context: Context) -> RoomPlanViewController {
-        let vc = RoomPlanViewController()
+    func makeUIViewController(context: Context) -> LiDARScanViewController {
+        let vc = LiDARScanViewController()
         vc.onComplete = onComplete
         return vc
     }
 
-    func updateUIViewController(_ uiViewController: RoomPlanViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: LiDARScanViewController, context: Context) {}
 }
 
-final class RoomPlanViewController: UIViewController, RoomCaptureViewDelegate {
+final class LiDARScanViewController: UIViewController, ARSCNViewDelegate {
     var onComplete: ((URL) -> Void)?
-    private var captureView: RoomCaptureView!
+    private var sceneView: ARSCNView!
     private var doneButton: UIButton!
     private var processingOverlay: UIView!
     private var isProcessing = false
+    private let hasLiDAR = ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh)
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .black
 
-        // RoomCaptureView — fills screen and renders live 3D mesh automatically
-        captureView = RoomCaptureView(frame: .zero)
-        captureView.translatesAutoresizingMaskIntoConstraints = false
-        captureView.delegate = self
-        view.addSubview(captureView)
+        // ARSCNView — full screen, shows live LiDAR mesh triangles
+        sceneView = ARSCNView(frame: .zero)
+        sceneView.translatesAutoresizingMaskIntoConstraints = false
+        sceneView.delegate = self
+        sceneView.autoenablesDefaultLighting = true
+        sceneView.automaticallyUpdatesLighting = true
+        sceneView.debugOptions = [.showFeaturePoints]
+        view.addSubview(sceneView)
         NSLayoutConstraint.activate([
-            captureView.topAnchor.constraint(equalTo: view.topAnchor),
-            captureView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            captureView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            captureView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            sceneView.topAnchor.constraint(equalTo: view.topAnchor),
+            sceneView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            sceneView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            sceneView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
 
-        // "Done Scanning" button overlay
+        // "Done Scanning" button
         doneButton = UIButton(type: .system)
         doneButton.setTitle("Done Scanning", for: .normal)
         doneButton.titleLabel?.font = .boldSystemFont(ofSize: 18)
@@ -307,7 +277,7 @@ final class RoomPlanViewController: UIViewController, RoomCaptureViewDelegate {
             doneButton.heightAnchor.constraint(equalToConstant: 52),
         ])
 
-        // Processing overlay (hidden until Done is tapped)
+        // Processing overlay
         processingOverlay = UIView()
         processingOverlay.backgroundColor = UIColor.black.withAlphaComponent(0.65)
         processingOverlay.translatesAutoresizingMaskIntoConstraints = false
@@ -335,18 +305,15 @@ final class RoomPlanViewController: UIViewController, RoomCaptureViewDelegate {
             stack.centerYAnchor.constraint(equalTo: processingOverlay.centerYAnchor),
         ])
 
-        captureView.captureSession.run(configuration: RoomCaptureSession.Configuration())
+        let config = ARWorldTrackingConfiguration()
+        config.planeDetection = [.horizontal, .vertical]
+        if hasLiDAR { config.sceneReconstruction = .mesh }
+        sceneView.session.run(config, options: [.resetTracking, .removeExistingAnchors])
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        if !isProcessing {
-            if #available(iOS 17, *) {
-                captureView.captureSession.stop(pauseARSession: true)
-            } else {
-                captureView.captureSession.stop()
-            }
-        }
+        sceneView.session.pause()
     }
 
     @objc private func stopScan() {
@@ -354,37 +321,85 @@ final class RoomPlanViewController: UIViewController, RoomCaptureViewDelegate {
         isProcessing = true
         doneButton.isHidden = true
         processingOverlay.isHidden = false
-        if #available(iOS 17, *) {
-            captureView.captureSession.stop(pauseARSession: false)
-        } else {
-            captureView.captureSession.stop()
-        }
-    }
+        sceneView.session.pause()
 
-    // MARK: - RoomCaptureViewDelegate
-
-    func captureView(shouldPresent roomDataForProcessing: CapturedRoomData, error: Error?) -> Bool {
-        return error == nil
-    }
-
-    func captureView(didPresent processedResult: CapturedRoom, error: Error?) {
-        let dest = FileManager.default.temporaryDirectory
-            .appendingPathComponent("\(UUID().uuidString).usdz")
-        do {
-            try processedResult.export(to: dest)
-            DispatchQueue.main.async { self.onComplete?(dest) }
-        } catch {
-            DispatchQueue.main.async {
-                self.processingOverlay.isHidden = true
-                self.doneButton.isHidden = false
-                self.isProcessing = false
+        Task {
+            let dest = FileManager.default.temporaryDirectory
+                .appendingPathComponent("\(UUID().uuidString).usdz")
+            do {
+                if hasLiDAR {
+                    // Export the live mesh scene captured by ARKit
+                    try sceneView.scene.write(to: dest, options: nil, delegate: nil, progressHandler: nil)
+                } else {
+                    // Non-LiDAR fallback: simple box placeholder
+                    let scene = SCNScene()
+                    let box = SCNBox(width: 5, height: 3, length: 5, chamferRadius: 0)
+                    box.firstMaterial?.diffuse.contents = UIColor.systemGray5
+                    scene.rootNode.addChildNode(SCNNode(geometry: box))
+                    try scene.write(to: dest, options: nil, delegate: nil, progressHandler: nil)
+                }
+                await MainActor.run { self.onComplete?(dest) }
+            } catch {
+                await MainActor.run {
+                    self.processingOverlay.isHidden = true
+                    self.doneButton.isHidden = false
+                    self.isProcessing = false
+                }
             }
         }
     }
+
+    // MARK: - ARSCNViewDelegate — Live mesh rendering (ported from MENTIS)
+
+    func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
+        guard let mesh = anchor as? ARMeshAnchor else { return nil }
+        let node = SCNNode()
+        node.geometry = buildMeshGeometry(from: mesh)
+        node.geometry?.firstMaterial = meshMaterial()
+        return node
+    }
+
+    func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
+        guard let mesh = anchor as? ARMeshAnchor else { return }
+        DispatchQueue.main.async {
+            node.geometry = self.buildMeshGeometry(from: mesh)
+            node.geometry?.firstMaterial = self.meshMaterial()
+        }
+    }
+
+    private func buildMeshGeometry(from anchor: ARMeshAnchor) -> SCNGeometry {
+        let g = anchor.geometry
+        let vertexSource = SCNGeometrySource(
+            buffer: g.vertices.buffer,
+            vertexFormat: g.vertices.format,
+            semantic: .vertex,
+            vertexCount: g.vertices.count,
+            dataOffset: g.vertices.offset,
+            dataStride: g.vertices.stride
+        )
+        let normalSource = SCNGeometrySource(
+            buffer: g.normals.buffer,
+            vertexFormat: g.normals.format,
+            semantic: .normal,
+            vertexCount: g.normals.count,
+            dataOffset: g.normals.offset,
+            dataStride: g.normals.stride
+        )
+        let faceElement = SCNGeometryElement(
+            buffer: g.faces.buffer,
+            primitiveType: .triangles,
+            primitiveCount: g.faces.count,
+            bytesPerIndex: g.faces.bytesPerIndex
+        )
+        return SCNGeometry(sources: [vertexSource, normalSource], elements: [faceElement])
+    }
+
+    private func meshMaterial() -> SCNMaterial {
+        let mat = SCNMaterial()
+        mat.diffuse.contents = UIColor(red: 0.4, green: 0.851, blue: 0.8, alpha: 0.35)
+        mat.isDoubleSided = true
+        mat.lightingModel = .constant
+        mat.fillMode = .lines
+        return mat
+    }
 }
-#else
-struct RoomPlanScanView: View {
-    let onComplete: (URL) -> Void
-    var body: some View { Text("RoomPlan not available on this device") }
-}
-#endif
