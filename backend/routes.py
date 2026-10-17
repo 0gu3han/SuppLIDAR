@@ -1,11 +1,28 @@
 import os
 import uuid
-from flask import Blueprint, request, send_from_directory
+from flask import Blueprint, request, send_from_directory, render_template
 from models import db, Organization, Room, Anchor, Object, Item, Request, TransactionHistory
 from utils import allowed_scan, allowed_image
 import oci_client
 
 bp = Blueprint("api", __name__)
+
+
+# ---------------------------------------------------------------------------
+# Web pages (teammate UI templates)
+# ---------------------------------------------------------------------------
+
+@bp.route("/")
+def index():
+    return render_template("index.html")
+
+@bp.route("/profile")
+def profile():
+    return render_template("profile.html")
+
+@bp.route("/browse")
+def browse():
+    return render_template("sorting.html")
 
 
 # ---------------------------------------------------------------------------

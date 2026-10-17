@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuppLIDAR - My Profile</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .auth-banner { background: #fff3cd; padding: 12px; border: 1px solid #ffeeba; border-radius: 6px; text-align: center; margin-bottom: 25px; }
+        .btn-auth { background: #27ae60; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; }
+        .profile-section { border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .section-title { margin-top: 0; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .inventory-list, .room-list { background: #f9f9f9; padding: 15px; border-radius: 6px; }
+    </style>
+</head>
+<body>
+
+    <!-- Classic Auth Prompt -->
+    <div class="auth-banner">
+        <span>Not logged in? </span>
+        <a href="/login" class="btn-auth">Login or Register</a>
+    </div>
+
+    <h2>My Dashboard</h2>
+
+    <!-- Option 1: Profile Settings -->
+    <div class="profile-section">
+        <h3 class="section-title">1. Profile Settings</h3>
+        <p><strong>Organization Name:</strong> Vanderbilt Community Pantry</p>
+        <p><strong>Account Type:</strong> Recipient Charity</p>
+        <p><strong>Email:</strong> contact@vandyfoodpantry.org</p>
+        <button>Edit Profile Settings</button>
+    </div>
+
+    <!-- Option 2: Inventory Management -->
+    <div class="profile-section">
+        <h3 class="section-title">2. My Inventory</h3>
+        <button style="margin-bottom: 15px;">+ Add New Inventory Item</button>
+        <div class="inventory-list">
+            <p>• 10x Office Chairs (Listed on Oct 17)</p>
+            <p>• 2x Whiteboards (Claimed by Local School)</p>
+        </div>
+    </div>
+
+    <!-- Option 3: Scanned Rooms -->
+    <div class="profile-section">
+        <h3 class="section-title">3. Scanned Rooms</h3>
+        <div class="room-list">
+            <p>📦 <strong>Room Scan #104:</strong> Dining Hall Storage (34 items detected via LiDAR)</p>
+            <p>📦 <strong>Room Scan #102:</strong> Science Lab 2B (8 equipment items detected)</p>
+        </div>
+    </div>
+
+</body>
+</html>

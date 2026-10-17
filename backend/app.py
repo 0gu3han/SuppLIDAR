@@ -1,4 +1,5 @@
 import os
+import click
 from flask import Flask
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -25,6 +26,13 @@ def create_app():
     db.init_app(app)
     Migrate(app, db)
     app.register_blueprint(routes_bp)
+
+    @app.cli.command("init-db")
+    def init_db():
+        """Drop and recreate all tables (use when schema changes)."""
+        db.drop_all()
+        db.create_all()
+        click.echo("Database reset — all tables recreated.")
 
     return app
 
