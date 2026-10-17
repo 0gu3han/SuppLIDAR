@@ -341,7 +341,11 @@ final class RoomPlanViewController: UIViewController, RoomCaptureViewDelegate {
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         if !isProcessing {
-            captureView.captureSession.stop(pauseARSession: true)
+            if #available(iOS 17, *) {
+                captureView.captureSession.stop(pauseARSession: true)
+            } else {
+                captureView.captureSession.stop()
+            }
         }
     }
 
@@ -350,7 +354,11 @@ final class RoomPlanViewController: UIViewController, RoomCaptureViewDelegate {
         isProcessing = true
         doneButton.isHidden = true
         processingOverlay.isHidden = false
-        captureView.captureSession.stop(pauseARSession: false)
+        if #available(iOS 17, *) {
+            captureView.captureSession.stop(pauseARSession: false)
+        } else {
+            captureView.captureSession.stop()
+        }
     }
 
     // MARK: - RoomCaptureViewDelegate
