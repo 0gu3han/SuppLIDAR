@@ -9,7 +9,7 @@ from routes import bp as routes_bp
 def create_app():
     DB_URL = os.environ.get(
         "DATABASE_URL",
-        "mysql+pymysql://root:password@localhost:3306/supplidar"
+        "mysql+pymysql://supplidar:SuppLIDAR123!@localhost:3306/supplidar"
     )
     UPLOAD_DIR = os.path.abspath(
         os.environ.get("UPLOAD_DIR", os.path.join(os.path.dirname(__file__), "uploads"))
