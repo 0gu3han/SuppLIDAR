@@ -1,6 +1,6 @@
 import os
 import click
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_migrate import Migrate
 from flask_cors import CORS
 from models import db
@@ -17,6 +17,8 @@ def create_app():
     )
     os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+    SPA_DIR = os.path.join(os.path.dirname(__file__), "static_spa")
+
     app = Flask(__name__)
     CORS(app)
     app.config["SQLALCHEMY_DATABASE_URI"] = DB_URL
@@ -26,6 +28,15 @@ def create_app():
     db.init_app(app)
     Migrate(app, db)
     app.register_blueprint(routes_bp)
+
+    # Serve React SPA — registered AFTER blueprint so API routes win
+    @app.route("/", defaults={"path": ""})
+    @app.route("/<path:path>")
+    def spa(path):
+        full = os.path.join(SPA_DIR, path)
+        if path and os.path.exists(full):
+            return send_from_directory(SPA_DIR, path)
+        return send_from_directory(SPA_DIR, "index.html")
 
     @app.cli.command("init-db")
     def init_db():

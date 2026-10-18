@@ -1,6 +1,6 @@
 import os
 import uuid
-from flask import Blueprint, request, send_from_directory, render_template
+from flask import Blueprint, request, send_from_directory, current_app
 from models import db, Organization, Room, Anchor, Object, Item, Request, TransactionHistory
 from utils import allowed_scan, allowed_image
 import oci_client
@@ -8,34 +8,6 @@ import oci_client
 bp = Blueprint("api", __name__)
 
 
-# ---------------------------------------------------------------------------
-# Web pages (teammate UI templates)
-# ---------------------------------------------------------------------------
-
-@bp.route("/")
-def index():
-    return render_template("index.html")
-
-@bp.route("/profile")
-def profile():
-    return render_template("profile.html")
-
-@bp.route("/browse")
-def browse():
-    return render_template("sorting.html")
-
-@bp.route("/rooms/list")
-def rooms_list():
-    rooms = Room.query.order_by(Room.created_at.desc()).all()
-    return render_template("rooms.html", rooms=rooms)
-
-@bp.route("/rooms/<int:room_id>/view")
-def view_room(room_id):
-    room = Room.query.get_or_404(room_id)
-    scan_url = room.glb_path or ""
-    if scan_url and not scan_url.startswith("http"):
-        scan_url = request.host_url.rstrip("/") + scan_url
-    return render_template("room_viewer.html", room=room, scan_url=scan_url)
 
 
 # ---------------------------------------------------------------------------
