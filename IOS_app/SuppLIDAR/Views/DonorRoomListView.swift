@@ -83,6 +83,9 @@ struct RoomDetailView: View {
     @State private var anchors: [Anchor] = []
     @State private var isLoading = false
     @State private var showPlacement = false
+    @State private var showModel = false
+    @State private var localModelURL: URL? = nil
+    @State private var isLoadingModel = false
 
     var body: some View {
         List {
@@ -103,10 +106,33 @@ struct RoomDetailView: View {
         }
         .navigationTitle(room.name)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: loadModel) {
+                    if isLoadingModel {
+                        ProgressView().scaleEffect(0.8)
+                    } else {
+                        Image(systemName: "cube.fill")
+                    }
+                }
+                .disabled(room.scan_url.isEmpty || isLoadingModel)
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showPlacement = true }) {
                     Image(systemName: "mappin.and.ellipse")
                 }
+            }
+        }
+        .sheet(isPresented: $showModel) {
+            if let url = localModelURL {
+                SceneKitModelView(fileURL: url)
+                    .ignoresSafeArea()
+                    .overlay(alignment: .topTrailing) {
+                        Button("Done") { showModel = false }
+                            .padding(12)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Capsule())
+                            .padding()
+                    }
             }
         }
         .fullScreenCover(isPresented: $showPlacement, onDismiss: load) {
@@ -120,6 +146,26 @@ struct RoomDetailView: View {
         Task {
             let result = (try? await APIClient.shared.listAnchors(roomId: room.id)) ?? []
             await MainActor.run { anchors = result; isLoading = false }
+        }
+    }
+
+    private func loadModel() {
+        guard !room.scan_url.isEmpty, !isLoadingModel else { return }
+        isLoadingModel = true
+        Task {
+            do {
+                let raw = room.scan_url
+                let url = raw.hasPrefix("http")
+                    ? URL(string: raw)!
+                    : URL(string: APIClient.shared.baseURL + raw)!
+                let (tmp, _) = try await URLSession.shared.download(from: url)
+                let dest = FileManager.default.temporaryDirectory
+                    .appendingPathComponent(UUID().uuidString + ".usdz")
+                try FileManager.default.moveItem(at: tmp, to: dest)
+                await MainActor.run { localModelURL = dest; isLoadingModel = false; showModel = true }
+            } catch {
+                await MainActor.run { isLoadingModel = false }
+            }
         }
     }
 }
