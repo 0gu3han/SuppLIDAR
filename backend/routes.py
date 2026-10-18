@@ -24,6 +24,14 @@ def profile():
 def browse():
     return render_template("sorting.html")
 
+@bp.route("/rooms/<int:room_id>/view")
+def view_room(room_id):
+    room = Room.query.get_or_404(room_id)
+    scan_url = room.glb_path or ""
+    if scan_url and not scan_url.startswith("http"):
+        scan_url = request.host_url.rstrip("/") + scan_url
+    return render_template("room_viewer.html", room=room, scan_url=scan_url)
+
 
 # ---------------------------------------------------------------------------
 # Health

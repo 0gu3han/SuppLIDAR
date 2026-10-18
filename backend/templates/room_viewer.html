@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ room.name }} — SuppLIDAR</title>
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #111827; color: #f9fafb; height: 100vh; display: flex; flex-direction: column; }
+        .header {
+            padding: 14px 24px;
+            background: #1f2937;
+            border-bottom: 1px solid #374151;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header a { color: #60a5fa; text-decoration: none; font-size: 0.9rem; }
+        .header h1 { font-size: 1.2rem; font-weight: 600; }
+        .header .meta { margin-left: auto; font-size: 0.8rem; color: #9ca3af; }
+        model-viewer {
+            flex: 1;
+            width: 100%;
+            background: #0f172a;
+            --poster-color: #0f172a;
+        }
+        .no-scan {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+            color: #6b7280;
+        }
+        .no-scan span { font-size: 3rem; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="/">← Home</a>
+        <h1>{{ room.name }}</h1>
+        <span class="meta">Scanned {{ room.created_at.strftime('%b %d, %Y') }}</span>
+    </div>
+
+    {% if scan_url %}
+    <model-viewer
+        src="{{ scan_url }}"
+        alt="3D scan of {{ room.name }}"
+        camera-controls
+        auto-rotate
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        shadow-intensity="1"
+        exposure="1"
+        environment-image="neutral"
+        loading="eager">
+    </model-viewer>
+    {% else %}
+    <div class="no-scan">
+        <span>📦</span>
+        <p>No 3D scan available for this room.</p>
+        <a href="/" style="color:#60a5fa">← Back to Home</a>
+    </div>
+    {% endif %}
+
+</body>
+</html>
