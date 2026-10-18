@@ -1,42 +1,42 @@
 /* ═══════════════════════════════════════════════════════════════
-   MENTIS — Design System: "The Celestial Atheneum"
+   SuppLIDAR — Design System: Emerald & Amber
    ═══════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
 /* ── Design Tokens ───────────────────────────────────────────── */
 :root {
-  --surface:               #10141a;
-  --surface-lowest:        #0a0e14;
-  --surface-low:           #181c22;
-  --surface-container:     #1c2026;
-  --surface-container-low: #161a21;
-  --surface-high:          #262a31;
-  --surface-highest:       #31353c;
-  --on-surface:            #dfe2eb;
-  --on-surface-dim:        #8e91a8;
-  --primary:               #666fca;
-  --primary-container:     #0d2187;
-  --primary-fixed:         #dee0ff;
-  --secondary:             #71749a;
-  --secondary-container:   #1ea296;
-  --secondary-dim:         #66d9cc;
-  --outline-variant:       #454652;
-  --shadow-ambient:        0px 24px 48px rgba(14, 34, 136, 0.15);
-  --navbar-bg:             rgba(10, 14, 20, 0.85);
-  --footer-bg:             rgba(10, 14, 20, 0.6);
-  --hero-label-bg:         rgba(10, 14, 30, 0.72);
-  --hero-label-border:     rgba(168, 180, 255, 0.25);
-  --hero-label-title:      #a8b4ff;
-  --hero-label-sub:        rgba(168, 180, 255, 0.55);
+  --surface:               #0d1a12;
+  --surface-lowest:        #070f0a;
+  --surface-low:           #121f16;
+  --surface-container:     #162219;
+  --surface-container-low: #101c13;
+  --surface-high:          #1e2e22;
+  --surface-highest:       #26382a;
+  --on-surface:            #d8eddf;
+  --on-surface-dim:        #7a9882;
+  --primary:               #3ecf6e;
+  --primary-container:     #0a4422;
+  --primary-fixed:         #c8f5d8;
+  --secondary:             #f0a030;
+  --secondary-container:   #7a4800;
+  --secondary-dim:         #fbbf60;
+  --outline-variant:       #2d4533;
+  --shadow-ambient:        0px 24px 48px rgba(10, 68, 34, 0.22);
+  --navbar-bg:             rgba(7, 15, 10, 0.88);
+  --footer-bg:             rgba(7, 15, 10, 0.65);
+  --hero-label-bg:         rgba(7, 18, 10, 0.78);
+  --hero-label-border:     rgba(62, 207, 110, 0.28);
+  --hero-label-title:      #3ecf6e;
+  --hero-label-sub:        rgba(62, 207, 110, 0.58);
   --viewer-overlay-bg:     var(--surface-lowest);
-  --modal-surface:         #10141f;
-  --modal-border:          rgba(168, 180, 255, 0.15);
-  --modal-title:           #e2e4ff;
-  --modal-body-text:       #8b90b8;
-  --modal-strong:          #c8caff;
+  --modal-surface:         #0f1c12;
+  --modal-border:          rgba(62, 207, 110, 0.16);
+  --modal-title:           #dff5e6;
+  --modal-body-text:       #6d9478;
+  --modal-strong:          #a8e8bc;
   --library-accent-opacity: 1;
-  --font-display:          'Space Grotesk', sans-serif;
+  --font-display:          'Sora', sans-serif;
   --font-body:             'Inter', sans-serif;
   --radius-sm:             0.25rem;
   --radius-md:             0.75rem;
@@ -45,35 +45,35 @@
 }
 
 :root[data-theme='light'] {
-  --surface:               #d6dee9;
-  --surface-lowest:        #e3e9f2;
-  --surface-low:           #cad4e3;
-  --surface-container:     #c3cedf;
-  --surface-container-low: #d0d9e7;
-  --surface-high:          #b8c5d8;
-  --surface-highest:       #acbcd3;
-  --on-surface:            #253049;
-  --on-surface-dim:        #505f79;
-  --primary:               #5a67cd;
-  --primary-container:     #3b4db4;
-  --primary-fixed:         #e1e7ff;
-  --secondary:             #53627b;
-  --secondary-container:   #35998e;
-  --secondary-dim:         #2c7f77;
-  --outline-variant:       #94a2bc;
-  --shadow-ambient:        0px 14px 32px rgba(38, 54, 120, 0.12);
-  --navbar-bg:             rgba(214, 222, 233, 0.88);
-  --footer-bg:             rgba(204, 214, 228, 0.92);
-  --hero-label-bg:         rgba(214, 223, 236, 0.88);
-  --hero-label-border:     rgba(90, 103, 205, 0.2);
-  --hero-label-title:      #4957c2;
-  --hero-label-sub:        rgba(73, 87, 194, 0.72);
-  --viewer-overlay-bg:     #ccd5e2;
-  --modal-surface:         #dce3ed;
-  --modal-border:          rgba(90, 103, 205, 0.18);
-  --modal-title:           #24314b;
-  --modal-body-text:       #51627d;
-  --modal-strong:          #3f52bf;
+  --surface:               #e6f4eb;
+  --surface-lowest:        #f2faf4;
+  --surface-low:           #daeee1;
+  --surface-container:     #cfe8d6;
+  --surface-container-low: #d8ece0;
+  --surface-high:          #c2deca;
+  --surface-highest:       #b2d2bc;
+  --on-surface:            #182e20;
+  --on-surface-dim:        #3d6649;
+  --primary:               #1e9e4a;
+  --primary-container:     #0d7a35;
+  --primary-fixed:         #ccf0d8;
+  --secondary:             #c97a10;
+  --secondary-container:   #a85e00;
+  --secondary-dim:         #b06810;
+  --outline-variant:       #7aaa88;
+  --shadow-ambient:        0px 14px 32px rgba(30, 90, 50, 0.12);
+  --navbar-bg:             rgba(218, 238, 224, 0.9);
+  --footer-bg:             rgba(206, 230, 214, 0.92);
+  --hero-label-bg:         rgba(218, 238, 224, 0.88);
+  --hero-label-border:     rgba(30, 158, 74, 0.22);
+  --hero-label-title:      #1a7a38;
+  --hero-label-sub:        rgba(26, 122, 56, 0.72);
+  --viewer-overlay-bg:     #cfe8d6;
+  --modal-surface:         #dff0e5;
+  --modal-border:          rgba(30, 158, 74, 0.18);
+  --modal-title:           #152618;
+  --modal-body-text:       #3d6649;
+  --modal-strong:          #1a5e30;
   --library-accent-opacity: 0.46;
 }
 
@@ -262,12 +262,12 @@ body {
 .modal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .modal-btn-cancel {
-  background: rgba(168, 180, 255, 0.08);
-  color: #a8b4ff;
-  border: 1px solid rgba(168, 180, 255, 0.2);
+  background: rgba(62, 207, 110, 0.08);
+  color: #3ecf6e;
+  border: 1px solid rgba(62, 207, 110, 0.2);
 }
 
-.modal-btn-cancel:hover:not(:disabled) { background: rgba(168, 180, 255, 0.14); }
+.modal-btn-cancel:hover:not(:disabled) { background: rgba(62, 207, 110, 0.14); }
 
 .modal-btn-delete {
   background: #c0392b;
@@ -1269,16 +1269,16 @@ body {
 .model-overlay-retry {
   padding: 8px 20px;
   border-radius: 8px;
-  border: 1px solid rgba(168, 180, 255, 0.3);
-  background: rgba(168, 180, 255, 0.08);
-  color: #a8b4ff;
+  border: 1px solid rgba(62, 207, 110, 0.3);
+  background: rgba(62, 207, 110, 0.08);
+  color: #3ecf6e;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
 }
 
-.model-overlay-retry:hover { background: rgba(168, 180, 255, 0.16); }
+.model-overlay-retry:hover { background: rgba(62, 207, 110, 0.16); }
 
 .model-overlay-download {
   display: inline-block;
