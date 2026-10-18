@@ -327,17 +327,23 @@ final class LiDARScanViewController: UIViewController, ARSCNViewDelegate {
             let dest = FileManager.default.temporaryDirectory
                 .appendingPathComponent("\(UUID().uuidString).usdz")
             do {
-                if hasLiDAR {
-                    // Export the live mesh scene captured by ARKit
-                    try sceneView.scene.write(to: dest, options: nil, delegate: nil, progressHandler: nil)
+                let exportScene = SCNScene()
+                if hasLiDAR, let anchors = sceneView.session.currentFrame?.anchors {
+                    // Read ARMeshAnchor data from GPU → CPU so SceneKit can serialize it
+                    for anchor in anchors {
+                        guard let mesh = anchor as? ARMeshAnchor else { continue }
+                        let node = SCNNode()
+                        node.geometry = buildExportGeometry(from: mesh)
+                        node.simdTransform = mesh.transform
+                        exportScene.rootNode.addChildNode(node)
+                    }
                 } else {
                     // Non-LiDAR fallback: simple box placeholder
-                    let scene = SCNScene()
                     let box = SCNBox(width: 5, height: 3, length: 5, chamferRadius: 0)
                     box.firstMaterial?.diffuse.contents = UIColor.systemGray5
-                    scene.rootNode.addChildNode(SCNNode(geometry: box))
-                    try scene.write(to: dest, options: nil, delegate: nil, progressHandler: nil)
+                    exportScene.rootNode.addChildNode(SCNNode(geometry: box))
                 }
+                try exportScene.write(to: dest, options: nil, delegate: nil, progressHandler: nil)
                 await MainActor.run { self.onComplete?(dest) }
             } catch {
                 await MainActor.run {
@@ -401,5 +407,49 @@ final class LiDARScanViewController: UIViewController, ARSCNViewDelegate {
         mat.lightingModel = .constant
         mat.fillMode = .lines
         return mat
+    }
+
+    /// Rebuilds mesh geometry with CPU-backed Data buffers so SCNScene.write() can serialize it.
+    /// (Metal-backed MTLBuffer sources render fine but cannot be written to USDZ.)
+    private func buildExportGeometry(from anchor: ARMeshAnchor) -> SCNGeometry {
+        let g = anchor.geometry
+
+        let vertexData = Data(
+            bytes: g.vertices.buffer.contents().advanced(by: g.vertices.offset),
+            count: g.vertices.stride * g.vertices.count
+        )
+        let vertexSource = SCNGeometrySource(
+            data: vertexData, semantic: .vertex,
+            vectorCount: g.vertices.count,
+            usesFloatComponents: true, componentsPerVector: 3, bytesPerComponent: 4,
+            dataOffset: 0, dataStride: g.vertices.stride
+        )
+
+        let normalData = Data(
+            bytes: g.normals.buffer.contents().advanced(by: g.normals.offset),
+            count: g.normals.stride * g.normals.count
+        )
+        let normalSource = SCNGeometrySource(
+            data: normalData, semantic: .normal,
+            vectorCount: g.normals.count,
+            usesFloatComponents: true, componentsPerVector: 3, bytesPerComponent: 4,
+            dataOffset: 0, dataStride: g.normals.stride
+        )
+
+        let faceData = Data(
+            bytes: g.faces.buffer.contents(),
+            count: g.faces.count * 3 * g.faces.bytesPerIndex
+        )
+        let faceElement = SCNGeometryElement(
+            data: faceData, primitiveType: .triangles,
+            primitiveCount: g.faces.count, bytesPerIndex: g.faces.bytesPerIndex
+        )
+
+        let geometry = SCNGeometry(sources: [vertexSource, normalSource], elements: [faceElement])
+        let mat = SCNMaterial()
+        mat.diffuse.contents = UIColor.systemGray4
+        mat.isDoubleSided = true
+        geometry.firstMaterial = mat
+        return geometry
     }
 }
