@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanned Rooms — SuppLIDAR</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; background: #111827; color: #f9fafb; min-height: 100vh; }
+        .header { padding: 16px 24px; background: #1f2937; border-bottom: 1px solid #374151; display: flex; align-items: center; gap: 16px; }
+        .header a { color: #60a5fa; text-decoration: none; font-size: 0.9rem; }
+        .header h1 { font-size: 1.2rem; font-weight: 600; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 24px; }
+        .card { background: #1f2937; border: 1px solid #374151; border-radius: 12px; overflow: hidden; transition: border-color 0.2s; }
+        .card:hover { border-color: #60a5fa; }
+        .card-body { padding: 20px; }
+        .card-body h2 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+        .card-body p { font-size: 0.8rem; color: #9ca3af; margin-bottom: 16px; }
+        .card-body a { display: block; text-align: center; background: #3b82f6; color: white; padding: 10px; border-radius: 8px; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+        .card-body a:hover { background: #2563eb; }
+        .empty { padding: 60px 24px; text-align: center; color: #6b7280; }
+        .empty span { font-size: 3rem; display: block; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/">← Home</a>
+        <h1>Scanned Rooms</h1>
+    </div>
+
+    {% if rooms %}
+    <div class="grid">
+        {% for room in rooms %}
+        <div class="card">
+            <div class="card-body">
+                <h2>{{ room.name }}</h2>
+                <p>Scanned {{ room.created_at.strftime('%b %d, %Y at %H:%M') }}</p>
+                <a href="/rooms/{{ room.id }}/view">View 3D Model →</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty">
+        <span>📦</span>
+        <p>No rooms scanned yet. Use the iOS app to scan a room.</p>
+    </div>
+    {% endif %}
+</body>
+</html>

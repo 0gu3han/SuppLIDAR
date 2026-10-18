@@ -24,6 +24,11 @@ def profile():
 def browse():
     return render_template("sorting.html")
 
+@bp.route("/rooms/list")
+def rooms_list():
+    rooms = Room.query.order_by(Room.created_at.desc()).all()
+    return render_template("rooms.html", rooms=rooms)
+
 @bp.route("/rooms/<int:room_id>/view")
 def view_room(room_id):
     room = Room.query.get_or_404(room_id)
