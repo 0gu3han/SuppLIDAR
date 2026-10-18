@@ -32,9 +32,9 @@ export default function HeroBg({ theme = 'dark' }) {
 
     // ── WebGL Renderer ───────────────────────────────────────────────────────
     const isLightTheme = theme === 'light'
-    const fogColor = isLightTheme ? 0xdaeee1 : 0x070f0a
-    const primaryLight = isLightTheme ? 0x1e9e4a : 0x3ecf6e
-    const secondaryLight = isLightTheme ? 0xc97a10 : 0xf0a030
+    const fogColor = isLightTheme ? 0xf0ede8 : 0x100f0d
+    const primaryLight = isLightTheme ? 0x3d7eaa : 0x7aaed6
+    const secondaryLight = isLightTheme ? 0xa85e2a : 0xc87c4a
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -76,7 +76,7 @@ export default function HeroBg({ theme = 'dark' }) {
             transparent: true,
           })
         : new THREE.MeshStandardMaterial({
-            color: i % 3 === 0 ? primaryLight : i % 3 === 1 ? (isLightTheme ? 0x28b856 : 0x5ce88a) : secondaryLight,
+            color: i % 3 === 0 ? primaryLight : i % 3 === 1 ? (isLightTheme ? 0x5a90b8 : 0x9ac0d8) : secondaryLight,
             roughness: 0.3,
             metalness: 0.7,
             opacity: rand(isLightTheme ? 0.12 : 0.35, isLightTheme ? 0.28 : 0.65),
