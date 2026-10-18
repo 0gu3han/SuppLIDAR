@@ -1,9 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-from database import SessionLocal, Organization
-
-# direct import
-from database import SessionLocal, Organization, Item, Request, TransactionHistory, init_db
+from database import SessionLocal, Organization, Item, ScannedRoom, init_db
 
 
 app = Flask(__name__)
@@ -13,18 +10,26 @@ app.secret_key = "supplidar_secret_key_hacktn26"
 
 
 # ----------------------------------------------------
-# Database Session Helper
+# Helper: current logged-in user
 # ----------------------------------------------------
-# Every request handled seperatly.
-def get_db():
-    if SessionLocal:
-        db = SessionLocal()
-        try:
-            return db
-        except Exception:
+def get_current_user():
+    """Returns the logged-in user's info as a dict, or None if not logged in."""
+    user_id = session.get('user_id')
+    if not user_id:
+        return None
+    db = SessionLocal()
+    try:
+        org = db.query(Organization).filter(Organization.id == user_id).first()
+        if not org:
             return None
-    return None
-
+        return {
+            "name": org.name,
+            "email": org.email,
+            "type": org.org_type,
+            "logged_in": True,
+        }
+    finally:
+        db.close()
 
 
 # ----------------------------------------------------
@@ -34,6 +39,7 @@ def get_db():
 def home():
     return render_template('index.html')
 
+
 # ----------------------------------------------------
 # 2. Search & Sorting Feed Page
 # ----------------------------------------------------
@@ -42,21 +48,53 @@ def home():
 def sorting_feed():
     return render_template('sorting.html')
 
+
 # ----------------------------------------------------
 # 3. Profile & Dashboard Page
+# (also serves /inventory and /scanned-rooms)
 # ----------------------------------------------------
 @app.route('/profile')
+@app.route('/inventory')
+@app.route('/scanned-rooms')
 def profile():
-    return render_template('profile.html')
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login'))
+
+    db = SessionLocal()
+    try:
+        items = (db.query(Item)
+                   .filter(Item.owner_org_id == session['user_id'])
+                   .order_by(Item.created_at.desc()).all())
+        inventory = [{
+            "title": i.title,
+            "category": i.category,
+            "status": i.status,
+            "created_at": i.created_at.strftime('%b %d, %Y'),
+            "urgency_score": (i.custom_metadata or {}).get('urgency_score', 'N/A'),
+        } for i in items]
+
+        scans = (db.query(ScannedRoom)
+                   .filter(ScannedRoom.organization_id == session['user_id'])
+                   .order_by(ScannedRoom.created_at.desc()).all())
+        rooms = [{
+            "name": r.room_name,
+            "count": r.item_count or 0,
+            "date": r.created_at.strftime('%Y-%m-%d'),
+            "items": [f"{d.get('count', 1)}x {d.get('name', 'Item')}" for d in (r.detected_items or [])],
+        } for r in scans]
+    finally:
+        db.close()
+
+    return render_template('profile.html', user=user, inventory=inventory, rooms=rooms)
+
 
 # ----------------------------------------------------
-# 4. Authentication Pages (Login & Signup)
+# 4. Authentication Pages (Login, Logout, Signup)
 # ----------------------------------------------------
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Placeholder for authentication logic
         email = request.form.get('email')
         password = request.form.get('password')
 
@@ -70,13 +108,11 @@ def login():
                 return redirect(url_for('profile'))
             else:
                 return render_template('login.html', error="Invalid email or password.")
-
         finally:
-                db.close()
+            db.close()
 
     return render_template('login.html')
 
-# loguot
 
 @app.route('/logout')
 def logout():
@@ -84,9 +120,6 @@ def logout():
     return redirect(url_for('home'))
 
 
-
-# signup
-# ----------------------------------------------------
 @app.route('/signup', methods=['GET', 'POST'])
 @app.route('/register', methods=['GET', 'POST'])
 def signup():
@@ -97,53 +130,33 @@ def signup():
         account_type = request.form.get('account_type', 'donor')
 
         db = SessionLocal()
-
         try:
             # Check if email already exists
             existing_user = db.query(Organization).filter(Organization.email == email).first()
             if existing_user:
                 return render_template('signup.html', error="Email is already registered. Please login.")
 
-                # Hash password and create user
-                hashed_pw = generate_password_hash(password)
-                new_org = Organization(
-                    name=org_name,
-                    email=email,
-                    password_hash=hashed_pw,
-                    org_type=account_type
-                )
-                db.add(new_org)
-                db.commit()
+            # Hash password and create user
+            new_org = Organization(
+                name=org_name,
+                email=email,
+                password_hash=generate_password_hash(password),
+                org_type=account_type
+            )
+            db.add(new_org)
+            db.commit()
 
-                # Store user info in session
-                session['user_id'] = new_org.id
-                session['user_name'] = new_org.name
-
-                return redirect(url_for('profile'))
+            flash("Account created successfully! Please log in.")
+            return redirect(url_for('login'))
+        except Exception:
+            db.rollback()
+            return render_template('signup.html', error="Something went wrong. Please try again.")
         finally:
             db.close()
 
-        return render_template('signup.html')
-
-
-
-
-
-        # Placeholder for account creation logic
-        return redirect(url_for('profile'))
     return render_template('signup.html')
 
-# ----------------------------------------------------
-# 5. Secondary Profile Sections
-# ----------------------------------------------------
-@app.route('/inventory')
-def inventory():
-    return render_template('profile.html')
-
-@app.route('/scanned-rooms')
-def scanned_rooms():
-    return render_template('profile.html')
 
 if __name__ == '__main__':
-    init_db() # Auto-creates all tables in OCI MySQL if missing
+    init_db()  # Creates any missing tables (existing tables are left untouched)
     app.run(debug=True, host='127.0.0.1', port=5000)

@@ -61,12 +61,8 @@
 
     <!-- Active User Status Banner -->
     <div class="auth-banner">
-        {% if user and user.logged_in %}
-            <span>Logged in as <strong>{{ user.name }}</strong> ({{ user.email }}) — <span style="text-transform: capitalize; color: #27ae60;">{{ user.type }}</span></span>
-        {% else %}
-            <span>Logged in as <strong>Guest / Demo Mode</strong>. </span>
-            <a href="/login" class="btn-auth" style="margin-left: 10px;">Login or Register</a>
-        {% endif %}
+        <span>Logged in as <strong>{{ user.name }}</strong> ({{ user.email }}) —
+        <span style="text-transform: capitalize; color: #27ae60;">{{ user.type }}</span></span>
     </div>
 
     <!-- Dashboard Split Layout -->
@@ -79,9 +75,9 @@
             <div id="tab-settings" class="tab-panel active">
                 <h3 class="section-title">Profile Settings</h3>
                 <div class="info-group">
-                    <p><strong>Organization Name:</strong> {{ user.name if user else 'Vanderbilt Community Pantry' }}</p>
-                    <p><strong>Account Type:</strong> {{ user.type if user else 'Recipient Charity' }}</p>
-                    <p><strong>Primary Email:</strong> {{ user.email if user else 'contact@vandyfoodpantry.org' }}</p>
+                    <p><strong>Organization Name:</strong> {{ user.name }}</p>
+                    <p><strong>Account Type:</strong> {{ user.type|capitalize }}</p>
+                    <p><strong>Primary Email:</strong> {{ user.email }}</p>
                     <p><strong>Location:</strong> Nashville, TN</p>
                 </div>
                 <button class="btn-primary" style="margin-top: 15px;">Edit Profile Settings</button>
@@ -108,22 +104,15 @@
                 </div>
 
                 <h4>Active Inventory Listings</h4>
-                {% if inventory and inventory|length > 0 %}
+                {% if inventory %}
                     {% for item in inventory %}
                         <div class="item-card">
                             <strong>📦 {{ item.title }}</strong> — <em>Listed {{ item.created_at }}</em><br>
-                            <small>Category: {{ item.category }} | Urgency Rating: {{ item.urgency_score }} | Status: <strong style="color: #27ae60;">{{ item.status }}</strong></small>
+                            <small>Category: {{ item.category }} | Urgency Score: {{ item.urgency_score }} | Status: <strong style="color: #27ae60;">{{ item.status }}</strong></small>
                         </div>
                     {% endfor %}
                 {% else %}
-                    <div class="item-card">
-                        <strong>🪑 10x Office Chairs</strong> — <em>Listed Oct 17</em><br>
-                        <small>Category: Furniture | Urgency Score: 6.2/10 | Status: Active</small>
-                    </div>
-                    <div class="item-card">
-                        <strong>🍎 50 lbs Fresh Produce</strong> — <em>Listed Oct 16</em><br>
-                        <small>Category: Food | Urgency Score: 9.8/10 | Status: Claimed</small>
-                    </div>
+                    <p style="color: #888;">No items listed yet. Add your first surplus item above.</p>
                 {% endif %}
             </div>
 
@@ -141,17 +130,16 @@
 
                 <h4>Your Scanned Rooms (Click to inspect 3D view)</h4>
 
-                <div class="room-card" onclick="openRoomModal('Dining Hall Storage B', 34, '2026-10-17', ['12x Wooden Tables', '20x Stacking Chairs', '2x Commercial Refrigerator Shelf Units'])">
-                    <strong style="font-size: 1.1rem; color: #2c3e50;">📦 Dining Hall Storage B</strong><br>
-                    <span>Detected Items: <strong>34 objects</strong> | Scanned: Oct 17, 2026</span><br>
-                    <small style="color: #27ae60;">✓ OCI Vision & GenAI Metadata Processed</small>
-                </div>
-
-                <div class="room-card" onclick="openRoomModal('Science Lab 2B', 8, '2026-10-15', ['4x Lab Desks', '2x Optical Microscopes', '2x Whiteboards'])">
-                    <strong style="font-size: 1.1rem; color: #2c3e50;">📦 Science Lab 2B</strong><br>
-                    <span>Detected Items: <strong>8 objects</strong> | Scanned: Oct 15, 2026</span><br>
-                    <small style="color: #27ae60;">✓ OCI Vision & GenAI Metadata Processed</small>
-                </div>
+                {% if rooms %}
+                    {% for room in rooms %}
+                        <div class="room-card" onclick='openRoomModal({{ room.name|tojson }}, {{ room.count }}, {{ room.date|tojson }}, {{ room.items|tojson }})'>
+                            <strong style="font-size: 1.1rem; color: #2c3e50;">📦 {{ room.name }}</strong><br>
+                            <span>Detected Items: <strong>{{ room.count }} objects</strong> | Scanned: {{ room.date }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: #888;">No scanned rooms yet. Upload a scan above to get started.</p>
+                {% endif %}
             </div>
 
         </div>

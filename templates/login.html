@@ -15,6 +15,9 @@
         /* Red Error Banner Styling */
         .error-banner { background: #fce8e6; color: #d93025; border: 1px solid #f5c2c7; padding: 12px; border-radius: 5px; margin-bottom: 15px; text-align: center; font-size: 0.9rem; font-weight: bold; }
 
+        /* Green Success Banner Styling */
+        .success-banner { background: #e6f4ea; color: #1e7e34; border: 1px solid #b7dfc1; padding: 12px; border-radius: 5px; margin-bottom: 15px; text-align: center; font-size: 0.9rem; font-weight: bold; }
+
         .auth-footer { margin-top: 20px; text-align: center; font-size: 0.9rem; color: #666; }
         .auth-footer a { color: #3498db; text-decoration: none; font-weight: bold; }
     </style>
@@ -23,6 +26,15 @@
 
     <div class="auth-card">
         <h2>🔑 Log In to SuppLIDAR</h2>
+
+        <!-- Displays after a successful signup -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="success-banner">✅ {{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
         <!-- Displays when wrong password or non-existent email is entered -->
         {% if error %}
