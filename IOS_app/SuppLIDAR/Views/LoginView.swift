@@ -11,7 +11,7 @@ struct LoginView: View {
     @State private var errorMessage = ""
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section("Server") {
                     TextField("Server URL", text: $serverURL)
@@ -68,16 +68,17 @@ struct LoginView: View {
         errorMessage = ""
         Task {
             do {
-                let resp = isRegistering
-                    ? try await APIClient.shared.register(email: email, name: orgName, orgType: orgType)
-                    : try await APIClient.shared.login(email: email)
-                await MainActor.run {
-                    appState.login(
-                        userId: resp.user_id,
-                        email: resp.email,
-                        orgName: isRegistering ? orgName : (UserDefaults.standard.string(forKey: "orgName") ?? ""),
-                        orgType: isRegistering ? orgType : (UserDefaults.standard.string(forKey: "orgType") ?? "donor")
-                    )
+                if isRegistering {
+                    let resp = try await APIClient.shared.register(email: email, name: orgName, orgType: orgType)
+                    await MainActor.run {
+                        appState.login(userId: resp.user_id, email: resp.email, orgName: orgName, orgType: orgType)
+                    }
+                } else {
+                    let resp = try await APIClient.shared.login(email: email)
+                    await MainActor.run {
+                        appState.login(userId: resp.user_id, email: resp.email,
+                                       orgName: resp.org_name, orgType: resp.org_type)
+                    }
                 }
             } catch {
                 await MainActor.run {

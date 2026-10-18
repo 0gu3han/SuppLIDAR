@@ -241,15 +241,23 @@ def detect_photo():
 # ---------------------------------------------------------------------------
 
 def _item_dict(item):
+    meta = item.custom_metadata or {}
     return {
-        "id":              item.id,
-        "owner_org_id":    item.owner_org_id,
-        "title":           item.title,
-        "description":     item.description or "",
-        "category":        item.category,
-        "status":          item.status,
-        "custom_metadata": item.custom_metadata or {},
-        "created_at":      item.created_at.isoformat(),
+        "id":           item.id,
+        "anchor_id":    meta.get("anchor_id"),
+        "owner_org_id": item.owner_org_id,
+        "name":         item.title,
+        "title":        item.title,
+        "description":  item.description or "",
+        "category":     item.category,
+        "status":       item.status,
+        "condition":    meta.get("condition", "good"),
+        "quantity":     meta.get("quantity", 1),
+        "weight_kg":    meta.get("weight_kg", 0.0),
+        "photo_url":    meta.get("photo_url", ""),
+        "custom_metadata": meta,
+        "created_at":   item.created_at.isoformat(),
+        "updated_at":   None,
     }
 
 
@@ -271,20 +279,79 @@ def list_items():
 @bp.route("/items", methods=["POST"])
 def create_item():
     data = request.json or {}
-    required = ["owner_org_id", "title", "category"]
-    if any(k not in data for k in required):
-        return {"error": f"{', '.join(required)} required"}, 400
+    title        = data.get("title") or data.get("name", "")
+    owner_org_id = data.get("owner_org_id")
+    anchor_id    = data.get("anchor_id")
+
+    # Derive owner from anchor when owner_org_id is not supplied
+    if not owner_org_id and anchor_id:
+        anchor = Anchor.query.get(int(anchor_id))
+        if anchor:
+            room = Room.query.get(anchor.room_id)
+            if room:
+                owner_org_id = room.org_id
+
+    if not owner_org_id:
+        return {"error": "owner_org_id (or anchor_id) required"}, 400
+
+    meta = {
+        "anchor_id": anchor_id,
+        "condition": data.get("condition", "good"),
+        "quantity":  data.get("quantity", 1),
+        "weight_kg": data.get("weight_kg", 0.0),
+        "photo_url": "",
+    }
+
     item = Item(
-        owner_org_id=int(data["owner_org_id"]),
-        title=data["title"],
-        description=data.get("description"),
-        category=data["category"],
-        status=data.get("status", "available"),
-        custom_metadata=data.get("custom_metadata"),
+        owner_org_id=int(owner_org_id),
+        title=title or "Untitled",
+        description=data.get("description", ""),
+        category=data.get("category", "other"),
+        status=data.get("status", "in_use"),
+        custom_metadata=meta,
     )
     db.session.add(item)
     db.session.commit()
     return {"item_id": item.id}, 201
+
+
+@bp.route("/items/<int:item_id>/photo", methods=["POST"])
+def item_photo(item_id):
+    item = Item.query.get_or_404(item_id)
+    f = request.files.get("photo")
+    if not f or not allowed_image(f.filename):
+        return {"error": "photo (jpg/jpeg/png/heic) required"}, 400
+
+    image_data = f.read()
+    ext = f.filename.rsplit(".", 1)[1].lower()
+
+    photo_url      = oci_client.upload_photo(image_data, ext)
+    vision_result  = oci_client.analyze_photo(image_data)
+    structured     = oci_client.structure_item(vision_result)
+
+    if structured.get("name"):
+        item.title = structured["name"]
+    if structured.get("description"):
+        item.description = structured["description"]
+    if structured.get("category"):
+        item.category = structured["category"]
+
+    meta = item.custom_metadata or {}
+    meta["photo_url"] = photo_url
+    if structured.get("condition"):
+        meta["condition"] = structured["condition"]
+    item.custom_metadata = meta
+    db.session.commit()
+
+    return {
+        "item": _item_dict(item),
+        "vision": {
+            "labels":  [{"name": l["name"], "confidence": l.get("confidence", 1.0)} for l in vision_result.get("labels", [])],
+            "objects": [{"name": o["name"], "confidence": o.get("confidence", 1.0)} for o in vision_result.get("objects", [])],
+            "text":    vision_result.get("text", []),
+        },
+        "structured": structured,
+    }
 
 
 @bp.route("/items/<int:item_id>", methods=["PATCH"])

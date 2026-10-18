@@ -1,5 +1,39 @@
 import SwiftUI
 import PhotosUI
+import UIKit
+
+// MARK: - Camera picker wrapper
+
+private struct CameraPickerView: UIViewControllerRepresentable {
+    @Binding var image: UIImage?
+    @Environment(\.dismiss) private var dismiss
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: CameraPickerView
+        init(_ parent: CameraPickerView) { self.parent = parent }
+
+        func imagePickerController(_ picker: UIImagePickerController,
+                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            parent.image = info[.originalImage] as? UIImage
+            picker.dismiss(animated: true)
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            picker.dismiss(animated: true)
+        }
+    }
+}
 
 /// Presented after placing an AR anchor. Lets the donor take/select a photo,
 /// triggers OCI Vision + Gen AI auto-fill, then confirms item details.
@@ -22,6 +56,10 @@ struct ItemTagView: View {
     @State private var analysisResult: PhotoAnalysisResponse?
     @State private var isSaving = false
     @State private var errorMessage = ""
+
+    @State private var showSourcePicker = false
+    @State private var showCamera = false
+    @State private var showGallery = false
 
     private let categories = ["medical_equipment", "furniture", "electronics", "food",
                               "clothing", "office_supplies", "tools", "other"]
@@ -64,9 +102,24 @@ struct ItemTagView: View {
                     .frame(maxHeight: 200)
                     .cornerRadius(8)
             }
-            PhotosPicker(selection: $selectedPhoto, matching: .images) {
+            Button {
+                showSourcePicker = true
+            } label: {
                 Label(photoImage == nil ? "Add Photo" : "Change Photo", systemImage: "camera")
             }
+            .confirmationDialog("Add Photo", isPresented: $showSourcePicker, titleVisibility: .hidden) {
+                Button("Take Photo") { showCamera = true }
+                Button("Choose from Library") { showGallery = true }
+                Button("Cancel", role: .cancel) {}
+            }
+            .sheet(isPresented: $showCamera, onDismiss: {
+                guard let img = photoImage else { return }
+                Task { await analyzeUIImage(img) }
+            }) {
+                CameraPickerView(image: $photoImage)
+                    .ignoresSafeArea()
+            }
+            .photosPicker(isPresented: $showGallery, selection: $selectedPhoto, matching: .images)
             .onChange(of: selectedPhoto) { newItem in
                 Task { await loadAndAnalyzePhoto(newItem) }
             }
@@ -127,6 +180,29 @@ struct ItemTagView: View {
     }
 
     // MARK: - Actions
+
+    private func analyzeUIImage(_ img: UIImage) async {
+        await MainActor.run { isAnalyzing = true; errorMessage = "" }
+        do {
+            let jpegData = img.jpegData(compressionQuality: 0.8) ?? Data()
+            let itemId = try await APIClient.shared.createItem(
+                anchorId: anchorId,
+                name: "", description: "", category: "", status: status,
+                condition: condition, quantity: quantity, weightKg: weightKg
+            )
+            let analysis = try await APIClient.shared.uploadItemPhoto(itemId: itemId, imageData: jpegData)
+            await MainActor.run {
+                analysisResult = analysis
+                if name.isEmpty, let n = analysis.structured.name, !n.isEmpty { name = n }
+                if description.isEmpty, let d = analysis.structured.description, !d.isEmpty { description = d }
+                if let c = analysis.structured.category, !c.isEmpty { category = c }
+                if let cond = analysis.structured.condition, !cond.isEmpty { condition = cond }
+                isAnalyzing = false
+            }
+        } catch {
+            await MainActor.run { errorMessage = error.localizedDescription; isAnalyzing = false }
+        }
+    }
 
     private func loadAndAnalyzePhoto(_ item: PhotosPickerItem?) async {
         guard let item else { return }

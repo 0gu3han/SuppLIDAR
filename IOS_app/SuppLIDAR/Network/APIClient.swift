@@ -37,7 +37,7 @@ final class APIClient {
         return try await send(req)
     }
 
-    func login(email: String) async throws -> SimpleAuthResponse {
+    func login(email: String) async throws -> LoginResponse {
         var req = try makeRequest(path: "/auth/login", method: "POST")
         req.httpBody = try JSONSerialization.data(withJSONObject: ["email": email])
         return try await send(req)
@@ -65,6 +65,18 @@ final class APIClient {
         let (data, resp) = try await session.upload(for: req, from: body)
         try checkStatus(data: data, response: resp)
         return try decoder.decode(CreateRoomResponse.self, from: data)
+    }
+
+    func downloadRoomFile(roomId: Int) async throws -> URL {
+        guard let url = URL(string: "\(baseURL)/rooms/\(roomId)/glb") else { throw APIError.badURL }
+        let (tempURL, response) = try await session.download(from: url)
+        let mime = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Type") ?? ""
+        let ext = mime.contains("usdz") ? "usdz" : "glb"
+        let dest = FileManager.default.temporaryDirectory
+            .appendingPathComponent("room_\(roomId).\(ext)")
+        try? FileManager.default.removeItem(at: dest)
+        try FileManager.default.moveItem(at: tempURL, to: dest)
+        return dest
     }
 
     func deleteRoom(roomId: Int) async throws {
@@ -104,6 +116,18 @@ final class APIClient {
         if let oid = orgId { path += "org_id=\(oid)" }
         let req = try makeRequest(path: path)
         return try await (send(req) as Wrapper).items
+    }
+
+    func createInventoryItem(title: String, category: String,
+                             description: String = "", status: String = "in_use") async throws -> Int {
+        struct Resp: Codable { let item_id: Int }
+        guard let oid = userId else { throw APIError.server("Not logged in") }
+        var req = try makeRequest(path: "/items", method: "POST")
+        req.httpBody = try JSONSerialization.data(withJSONObject: [
+            "owner_org_id": oid, "title": title, "category": category,
+            "description": description, "status": status
+        ])
+        return try await (send(req) as Resp).item_id
     }
 
     func createItem(anchorId: Int, name: String, description: String, category: String,
