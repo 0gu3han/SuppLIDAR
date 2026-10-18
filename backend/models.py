@@ -88,7 +88,10 @@ class Item(db.Model):
     # "available" | "requested" | "borrowed" | "gone"
     status          = db.Column(db.String(50), nullable=False, default="available")
     condition       = db.Column(db.String(50), nullable=False, default="good")
-    # Stores OCI Vision labels, weight, photo_url, embedding, etc.
+    quantity        = db.Column(db.Integer, nullable=False, default=1)
+    weight_kg       = db.Column(db.Float, nullable=False, default=0.0)
+    photo_url       = db.Column(db.String(512), nullable=False, default="")
+    # Stores OCI Vision labels, embedding, etc.
     custom_metadata = db.Column(db.JSON, nullable=True)
     created_at      = db.Column(db.DateTime, default=utc_now)
 

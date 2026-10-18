@@ -252,9 +252,9 @@ def _item_dict(item):
         "category":     item.category,
         "status":       item.status,
         "condition":    item.condition,
-        "quantity":     meta.get("quantity", 1),
-        "weight_kg":    meta.get("weight_kg", 0.0),
-        "photo_url":    meta.get("photo_url", ""),
+        "quantity":     item.quantity,
+        "weight_kg":    item.weight_kg,
+        "photo_url":    item.photo_url or "",
         "custom_metadata": meta,
         "created_at":   item.created_at.isoformat(),
         "updated_at":   None,
@@ -294,14 +294,6 @@ def create_item():
     if not owner_org_id:
         return {"error": "owner_org_id (or anchor_id) required"}, 400
 
-    meta = {
-        "anchor_id": anchor_id,
-        "condition": data.get("condition", "good"),
-        "quantity":  data.get("quantity", 1),
-        "weight_kg": data.get("weight_kg", 0.0),
-        "photo_url": "",
-    }
-
     item = Item(
         owner_org_id=int(owner_org_id),
         title=title or "Untitled",
@@ -309,7 +301,10 @@ def create_item():
         category=data.get("category", "other"),
         status=data.get("status", "in_use"),
         condition=data.get("condition", "good"),
-        custom_metadata=meta,
+        quantity=int(data.get("quantity", 1)),
+        weight_kg=float(data.get("weight_kg", 0.0)),
+        photo_url="",
+        custom_metadata={"anchor_id": anchor_id},
     )
     db.session.add(item)
     db.session.commit()
@@ -337,12 +332,9 @@ def item_photo(item_id):
     if structured.get("category"):
         item.category = structured["category"]
 
-    # Copy into a new dict so SQLAlchemy detects the JSON column as modified
-    meta = dict(item.custom_metadata or {})
-    meta["photo_url"] = photo_url
+    item.photo_url = photo_url
     if structured.get("condition"):
         item.condition = structured["condition"]
-    item.custom_metadata = meta
     db.session.commit()
 
     return {
