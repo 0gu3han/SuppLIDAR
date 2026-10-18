@@ -1,6 +1,6 @@
 import os
 import uuid
-from flask import Blueprint, request, send_from_directory, current_app
+from flask import Blueprint, request, send_from_directory, current_app, redirect
 from models import db, Organization, Room, Anchor, Object, Item, Request, TransactionHistory
 from utils import allowed_scan, allowed_image
 import oci_client
@@ -94,6 +94,12 @@ def create_room():
     except Exception as e:
         db.session.rollback()
         return {"error": str(e)}, 500
+
+
+@bp.route("/rooms/<int:room_id>/glb")
+def room_glb(room_id):
+    room = Room.query.get_or_404(room_id)
+    return redirect(room.glb_path)
 
 
 @bp.route("/rooms/<int:room_id>", methods=["DELETE"])
