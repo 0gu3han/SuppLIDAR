@@ -106,7 +106,23 @@ def analyze_photo(image_data: bytes) -> dict:
       text      : list of str — OCR extracted text (asset tags, expiry dates, etc.)
     """
     if USE_LOCAL:
-        return {"labels": [], "objects": [], "text": []}
+        # Return a plausible mock so structure_item produces useful output in dev
+        import random
+        mock_items = [
+            {"labels": [{"name": "Office Chair", "confidence": 0.92}, {"name": "Furniture", "confidence": 0.88}],
+             "objects": [{"name": "Chair", "confidence": 0.90}], "text": []},
+            {"labels": [{"name": "Desk", "confidence": 0.89}, {"name": "Office Furniture", "confidence": 0.85}],
+             "objects": [{"name": "Table", "confidence": 0.87}], "text": ["IKEA", "BEKANT"]},
+            {"labels": [{"name": "Laptop", "confidence": 0.94}, {"name": "Electronics", "confidence": 0.91}],
+             "objects": [{"name": "Laptop Computer", "confidence": 0.93}], "text": ["Dell", "Latitude"]},
+            {"labels": [{"name": "Monitor", "confidence": 0.91}, {"name": "Display", "confidence": 0.88}],
+             "objects": [{"name": "Computer Monitor", "confidence": 0.90}], "text": ["24\"", "1080p"]},
+            {"labels": [{"name": "Bookshelf", "confidence": 0.87}, {"name": "Storage", "confidence": 0.83}],
+             "objects": [{"name": "Shelving Unit", "confidence": 0.85}], "text": []},
+            {"labels": [{"name": "Printer", "confidence": 0.90}, {"name": "Office Equipment", "confidence": 0.86}],
+             "objects": [{"name": "Laser Printer", "confidence": 0.88}], "text": ["HP", "LaserJet"]},
+        ]
+        return random.choice(mock_items)
 
     import oci
 
@@ -146,9 +162,9 @@ def analyze_photo(image_data: bytes) -> dict:
 # ---------------------------------------------------------------------------
 
 def _chat(prompt: str, max_tokens: int = 512) -> str:
-    """Send a prompt to Cohere Command R via OCI Gen AI."""
+    """Send a prompt to Cohere Command R via OCI Gen AI. Returns empty string in local mode."""
     if USE_LOCAL:
-        return ""
+        return ""  # callers handle empty → use label-based fallback
 
     import oci
 
@@ -167,6 +183,21 @@ def _chat(prompt: str, max_tokens: int = 512) -> str:
         )
     )
     return response.data.chat_response.text.strip()
+
+
+def _guess_category(label: str) -> str:
+    label = label.lower()
+    if any(w in label for w in ["chair", "desk", "table", "shelf", "sofa", "cabinet", "furniture"]):
+        return "furniture"
+    if any(w in label for w in ["laptop", "monitor", "computer", "printer", "keyboard", "phone", "tablet", "electronics"]):
+        return "electronics"
+    if any(w in label for w in ["medical", "hospital", "wheelchair", "bed", "stretcher"]):
+        return "medical_equipment"
+    if any(w in label for w in ["shirt", "jacket", "clothing", "uniform"]):
+        return "clothing"
+    if any(w in label for w in ["tool", "drill", "wrench", "hammer"]):
+        return "tools"
+    return "office_supplies"
 
 
 def structure_item(vision_result: dict) -> dict:
@@ -194,7 +225,20 @@ JSON:"""
 
     raw = _chat(prompt, max_tokens=256)
     if not raw:
-        return {"name": "", "category": "other", "condition": "good", "description": ""}
+        # USE_LOCAL fallback: derive structured output directly from vision labels
+        top_label = (vision_result.get("labels") or [{}])[0].get("name", "")
+        top_object = (vision_result.get("objects") or [{}])[0].get("name", "")
+        name = top_object or top_label or "Surplus Item"
+        ocr_hint = " ".join(vision_result.get("text", []))
+        if ocr_hint:
+            name = f"{name} ({ocr_hint[:30].strip()})"
+        category = _guess_category(top_label or top_object)
+        return {
+            "name": name,
+            "category": category,
+            "condition": "good",
+            "description": f"Detected as: {top_label}. {('OCR: ' + ocr_hint) if ocr_hint else ''}".strip(". "),
+        }
 
     try:
         start = raw.find("{")

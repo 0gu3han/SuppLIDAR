@@ -48,7 +48,7 @@ struct DonorRoomListView: View {
                     Button("Logout") { appState.logout() }
                 }
             }
-            .sheet(isPresented: $showScan, onDismiss: load) {
+            .fullScreenCover(isPresented: $showScan, onDismiss: load) {
                 ScanView()
             }
             .onAppear(perform: load)

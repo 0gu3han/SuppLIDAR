@@ -21,6 +21,8 @@ targets:
     dependencies:
       - sdk: ARKit.framework
         weak: false
+      - sdk: RealityKit.framework
+        weak: false
       - sdk: RoomPlan.framework
         weak: true
       - sdk: SceneKit.framework

@@ -6,13 +6,16 @@ struct SuppLIDARApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if appState.isLoggedIn {
-                ContentView()
-                    .environmentObject(appState)
-            } else {
-                LoginView()
-                    .environmentObject(appState)
+            Group {
+                if appState.isLoggedIn {
+                    ContentView()
+                        .environmentObject(appState)
+                } else {
+                    LoginView()
+                        .environmentObject(appState)
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
