@@ -228,9 +228,9 @@ final class APIClient {
 
     // MARK: - Helpers
 
-    private func makeRequest(path: String, method: String = "GET") throws -> URLRequest {
+    private func makeRequest(path: String, method: String = "GET", timeout: TimeInterval = 30) throws -> URLRequest {
         guard let url = URL(string: "\(baseURL)\(path)") else { throw APIError.badURL }
-        var req = URLRequest(url: url)
+        var req = URLRequest(url: url, timeoutInterval: timeout)
         req.httpMethod = method
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         return req
