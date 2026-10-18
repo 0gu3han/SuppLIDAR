@@ -12,11 +12,11 @@ const SHAPE_DEFS = [
   { make: () => new THREE.IcosahedronGeometry(0.5, 0),   minS: 0.35, maxS: 1.00 },
 ]
 
-// Labels attached to specific shape indices — explain the memory palace idea
+// Labels attached to specific shape indices
 const SHAPE_LABELS = {
-  3:  { text: 'Spatial Anchor', sub: 'Pin any location in 3D space' },
-  14: { text: 'Memory Palace',  sub: 'Walk through your knowledge' },
-  24: { text: 'Place & Learn',  sub: 'Encode info into physical space' },
+  3:  { text: 'LiDAR Scan',       sub: 'Photo-realistic 3D room capture' },
+  14: { text: 'Surplus Exchange',  sub: 'Connect donors to nonprofits' },
+  24: { text: 'AR Tagging',        sub: 'Place anchors on real objects' },
 }
 
 function rand(min, max) { return min + Math.random() * (max - min) }

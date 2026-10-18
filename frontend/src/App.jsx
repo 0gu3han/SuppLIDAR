@@ -201,22 +201,40 @@ export default function App() {
                 <div className="demo-rooms-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
                   {[
                     {
-                      icon: '📡',
+                      icon: (
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--secondary-dim)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                        </svg>
+                      ),
                       title: 'LiDAR Room Scan',
                       body: 'Donors scan their space with an iPhone LiDAR sensor, capturing a photo-realistic 3D model of the room.',
                     },
                     {
-                      icon: '📦',
+                      icon: (
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--secondary-dim)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                          <line x1="12" y1="12" x2="12" y2="22"/><line x1="3.27" y1="6.96" x2="12" y2="12"/>
+                        </svg>
+                      ),
                       title: 'Tag Surplus Items',
                       body: 'Place AR anchors on furniture, equipment, and supplies. AI automatically identifies and categorises items.',
                     },
                     {
-                      icon: '🤝',
+                      icon: (
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--secondary-dim)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                          <line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+                        </svg>
+                      ),
                       title: 'Nonprofits Browse & Request',
                       body: 'Nonprofits browse available surplus in 3D, see exact condition, and request what their community needs.',
                     },
                     {
-                      icon: '♻️',
+                      icon: (
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--secondary-dim)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+                        </svg>
+                      ),
                       title: 'Track Impact',
                       body: 'Follow every item from surplus to transfer. Measure CO₂ saved and community value delivered.',
                     },
@@ -224,7 +242,7 @@ export default function App() {
                     <div key={title} className="demo-room-card" style={{ cursor: 'default' }}>
                       <div className="demo-room-thumb" style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '2.5rem', background: 'var(--surface-high)',
+                        background: 'var(--surface-high)',
                       }}>
                         {icon}
                       </div>
