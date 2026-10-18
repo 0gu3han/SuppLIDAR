@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuppLIDAR - Sign Up</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f8f9fa; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+        .auth-card { background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 420px; border: 1px solid #e0e0e0; }
+        .auth-card h2 { margin-top: 0; color: #2c3e50; text-align: center; }
+        .form-control { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 0.95rem; }
+        .btn-submit { width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: bold; }
+        .btn-submit:hover { background: #219150; }
+
+        /* Red Error Banner Styling */
+        .error-banner { background: #fce8e6; color: #d93025; border: 1px solid #f5c2c7; padding: 12px; border-radius: 5px; margin-bottom: 15px; text-align: center; font-size: 0.9rem; font-weight: bold; }
+
+        .auth-footer { margin-top: 20px; text-align: center; font-size: 0.9rem; color: #666; }
+        .auth-footer a { color: #3498db; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-card">
+        <h2>📝 Create Account</h2>
+
+        <!-- Displays when registration errors occur (e.g. duplicate email) -->
+        {% if error %}
+            <div class="error-banner">
+                ⚠️ {{ error }}
+            </div>
+        {% endif %}
+
+        <form action="/signup" method="POST">
+            <input type="text" name="org_name" class="form-control" placeholder="Organization / User Name" required>
+
+            <select name="account_type" class="form-control" required>
+                <option value="donor">Donor (Business / Campus Unit)</option>
+                <option value="recipient" selected>Recipient Charity / Food Bank</option>
+            </select>
+
+            <input type="email" name="email" class="form-control" placeholder="Email Address" required>
+            <input type="password" name="password" class="form-control" placeholder="Password" required>
+
+            <button type="submit" class="btn-submit">Create Account</button>
+        </form>
+
+        <div class="auth-footer">
+            Already have an account? <a href="/login">Log in here</a><br><br>
+            <a href="/" style="color: #888;">← Back to Home</a>
+        </div>
+    </div>
+
+</body>
+</html>

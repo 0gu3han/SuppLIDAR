@@ -3,73 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SuppLIDAR - My Profile</title>
+    <title>SuppLIDAR - My Dashboard</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; color: #333; }
         .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
-        .auth-banner { background: #fff3cd; padding: 12px; border: 1px solid #ffeeba; border-radius: 6px; text-align: center; margin-bottom: 20px; }
-        .btn-auth { background: #27ae60; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; }
+        .auth-banner { background: #e8f4fd; padding: 12px; border: 1px solid #b6d4fe; border-radius: 6px; text-align: center; margin-bottom: 20px; }
+        .btn-auth { background: #27ae60; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-weight: bold; }
 
         /* Two-Column Sidebar Layout */
         .profile-container { display: flex; gap: 25px; align-items: flex-start; }
 
-        /* Main Area (Left Column - Profile Settings) */
-        .main-content { flex: 2; background: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        /* Main Area (Left Column) */
+        .main-content { flex: 2; background: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); min-height: 400px; }
         .section-title { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        .info-group p { margin: 12px 0; font-size: 1rem; color: #333; }
-        .btn-edit { background: #3498db; color: white; border: none; padding: 10px 18px; border-radius: 5px; cursor: pointer; margin-top: 15px; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
 
-        /* Sidebar Options (Right Column) */
+        /* Forms & Buttons */
+        .info-group p { margin: 12px 0; font-size: 1rem; color: #333; }
+        .btn-primary { background: #3498db; color: white; border: none; padding: 10px 18px; border-radius: 5px; cursor: pointer; font-size: 0.95rem; }
+        .btn-primary:hover { background: #2980b9; }
+        .btn-success { background: #27ae60; color: white; border: none; padding: 10px 18px; border-radius: 5px; cursor: pointer; font-size: 0.95rem; }
+        .btn-success:hover { background: #219150; }
+
+        .form-control { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 0.95rem; }
+
+        /* Inventory & Room Cards */
+        .item-card, .room-card { background: #f9f9f9; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; margin-bottom: 12px; cursor: pointer; transition: transform 0.1s, border-color 0.2s; }
+        .room-card:hover { transform: translateY(-2px); border-color: #3498db; background: #f0f7fc; }
+
+        /* Sidebar Menu (Right Column) */
         .sidebar { flex: 1; background: #ffffff; padding: 20px; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .sidebar-title { margin-top: 0; font-size: 1.2rem; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .sidebar-menu { display: flex; flex-direction: column; gap: 12px; margin-top: 15px; }
         .menu-btn { display: block; width: 100%; padding: 12px 15px; background: #f1f3f5; border: 1px solid #ced4da; border-radius: 6px; text-align: left; font-size: 0.95rem; color: #333; text-decoration: none; cursor: pointer; box-sizing: border-box; }
         .menu-btn.active { background: #2c3e50; color: #ffffff; border-color: #2c3e50; font-weight: bold; }
         .menu-btn:hover:not(.active) { background: #e9ecef; }
+
+        /* Logout Button Red Accent */
+        .menu-btn-logout { background: #fce8e6; color: #d93025; border: 1px solid #f5c2c7; font-weight: bold; text-align: center; margin-top: 15px; }
+        .menu-btn-logout:hover { background: #f8d7da; color: #a71d2a; }
+
+        /* Pop-up Modal Styling */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-card { background: #fff; padding: 30px; border-radius: 10px; width: 90%; max-width: 550px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; }
+        .modal-close { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #888; }
+        .modal-close:hover { color: #000; }
+        .room-3d-preview { height: 180px; background: #2c3e50; color: #ecf0f1; display: flex; align-items: center; justify-content: center; border-radius: 6px; margin: 15px 0; font-family: monospace; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>Dashboard</h2>
-        <a href="/" style="text-decoration: none;">← Back to Home</a>
+        <h2>SuppLIDAR Dashboard</h2>
+        <a href="/" style="text-decoration: none; color: #3498db; font-weight: bold;">← Return to Home</a>
     </div>
 
-    <!-- Auth Banner -->
+    <!-- Active User Status Banner -->
     <div class="auth-banner">
-        <span>Not logged in? </span>
-        <a href="/login" class="btn-auth">Login or Register</a>
+        {% if user and user.logged_in %}
+            <span>Logged in as <strong>{{ user.name }}</strong> ({{ user.email }}) — <span style="text-transform: capitalize; color: #27ae60;">{{ user.type }}</span></span>
+        {% else %}
+            <span>Logged in as <strong>Guest / Demo Mode</strong>. </span>
+            <a href="/login" class="btn-auth" style="margin-left: 10px;">Login or Register</a>
+        {% endif %}
     </div>
 
     <!-- Dashboard Split Layout -->
     <div class="profile-container">
 
-        <!-- Main Left Content: Shows Profile Settings -->
+        <!-- Left Column: Dynamic Content Panels -->
         <div class="main-content">
-            <h3 class="section-title">Profile Settings</h3>
 
-            <div class="info-group">
-                <p><strong>Organization Name:</strong> Vanderbilt Community Pantry</p>
-                <p><strong>Account Type:</strong> Recipient Charity</p>
-                <p><strong>Primary Email:</strong> contact@vandyfoodpantry.org</p>
-                <p><strong>Contact Phone:</strong> (615) 555-0199</p>
-                <p><strong>Location:</strong> Nashville, TN</p>
+            <!-- Tab 1: Profile Settings -->
+            <div id="tab-settings" class="tab-panel active">
+                <h3 class="section-title">Profile Settings</h3>
+                <div class="info-group">
+                    <p><strong>Organization Name:</strong> {{ user.name if user else 'Vanderbilt Community Pantry' }}</p>
+                    <p><strong>Account Type:</strong> {{ user.type if user else 'Recipient Charity' }}</p>
+                    <p><strong>Primary Email:</strong> {{ user.email if user else 'contact@vandyfoodpantry.org' }}</p>
+                    <p><strong>Location:</strong> Nashville, TN</p>
+                </div>
+                <button class="btn-primary" style="margin-top: 15px;">Edit Profile Settings</button>
             </div>
 
-            <button class="btn-edit">Edit Profile Settings</button>
+            <!-- Tab 2: My Inventory -->
+            <div id="tab-inventory" class="tab-panel">
+                <h3 class="section-title">My Surplus Inventory</h3>
+
+                <!-- Add New Item Form -->
+                <div style="background: #f1f3f5; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                    <h4 style="margin-top:0;">+ Add New Surplus Item</h4>
+                    <form action="/api/items/add" method="POST">
+                        <input type="text" name="title" class="form-control" placeholder="Item Name (e.g. 10x Ergonomic Office Chairs)" required>
+                        <select name="category" class="form-control" required>
+                            <option value="Furniture">Furniture</option>
+                            <option value="Food">Food / Perishables</option>
+                            <option value="Electronics">Electronics / Equipment</option>
+                            <option value="Supplies">General Supplies</option>
+                        </select>
+                        <textarea name="description" class="form-control" rows="3" placeholder="Condition details, urgency, pickup instructions..."></textarea>
+                        <button type="submit" class="btn-success">AI Analyze & Publish Item</button>
+                    </form>
+                </div>
+
+                <h4>Active Inventory Listings</h4>
+                {% if inventory and inventory|length > 0 %}
+                    {% for item in inventory %}
+                        <div class="item-card">
+                            <strong>📦 {{ item.title }}</strong> — <em>Listed {{ item.created_at }}</em><br>
+                            <small>Category: {{ item.category }} | Urgency Rating: {{ item.urgency_score }} | Status: <strong style="color: #27ae60;">{{ item.status }}</strong></small>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="item-card">
+                        <strong>🪑 10x Office Chairs</strong> — <em>Listed Oct 17</em><br>
+                        <small>Category: Furniture | Urgency Score: 6.2/10 | Status: Active</small>
+                    </div>
+                    <div class="item-card">
+                        <strong>🍎 50 lbs Fresh Produce</strong> — <em>Listed Oct 16</em><br>
+                        <small>Category: Food | Urgency Score: 9.8/10 | Status: Claimed</small>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Tab 3: Scanned Rooms -->
+            <div id="tab-scanned-rooms" class="tab-panel">
+                <h3 class="section-title">Scanned 3D LiDAR Rooms</h3>
+
+                <!-- Upload LiDAR Scan Area -->
+                <div style="border: 2px dashed #3498db; background: #f0f7fc; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 25px;">
+                    <h4 style="margin: 0 0 10px 0; color: #2c3e50;">📡 Upload New Room Scan</h4>
+                    <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Upload 3D spatial scan file (.json, .usdz, .ply) exported from mobile LiDAR app.</p>
+                    <input type="file" id="lidarFileInput" accept=".json,.usdz,.ply,.obj" style="display: none;" onchange="handleLidarUpload()">
+                    <button class="btn-primary" onclick="document.getElementById('lidarFileInput').click()">Choose 3D Scan File</button>
+                </div>
+
+                <h4>Your Scanned Rooms (Click to inspect 3D view)</h4>
+
+                <div class="room-card" onclick="openRoomModal('Dining Hall Storage B', 34, '2026-10-17', ['12x Wooden Tables', '20x Stacking Chairs', '2x Commercial Refrigerator Shelf Units'])">
+                    <strong style="font-size: 1.1rem; color: #2c3e50;">📦 Dining Hall Storage B</strong><br>
+                    <span>Detected Items: <strong>34 objects</strong> | Scanned: Oct 17, 2026</span><br>
+                    <small style="color: #27ae60;">✓ OCI Vision & GenAI Metadata Processed</small>
+                </div>
+
+                <div class="room-card" onclick="openRoomModal('Science Lab 2B', 8, '2026-10-15', ['4x Lab Desks', '2x Optical Microscopes', '2x Whiteboards'])">
+                    <strong style="font-size: 1.1rem; color: #2c3e50;">📦 Science Lab 2B</strong><br>
+                    <span>Detected Items: <strong>8 objects</strong> | Scanned: Oct 15, 2026</span><br>
+                    <small style="color: #27ae60;">✓ OCI Vision & GenAI Metadata Processed</small>
+                </div>
+            </div>
+
         </div>
 
         <!-- Right Side Menu Options -->
         <div class="sidebar">
             <h3 class="sidebar-title">Menu Options</h3>
             <div class="sidebar-menu">
-                <a href="/profile" class="menu-btn active">⚙️ Profile Settings</a>
-                <a href="/inventory" class="menu-btn">📦 My Inventory</a>
-                <a href="/scanned-rooms" class="menu-btn">📡 Scanned Rooms</a>
+                <button id="btn-settings" class="menu-btn active" onclick="switchTab('settings')">⚙️ Profile Settings</button>
+                <button id="btn-inventory" class="menu-btn" onclick="switchTab('inventory')">📦 My Inventory</button>
+                <button id="btn-scanned-rooms" class="menu-btn" onclick="switchTab('scanned-rooms')">📡 Scanned Rooms</button>
+
+                <!-- Log Out Button -->
+                <a href="/logout" class="menu-btn menu-btn-logout">
+                    🚪 Log Out
+                </a>
             </div>
         </div>
 
     </div>
+
+    <!-- 3D Room Scan Pop-Up Modal -->
+    <div id="roomModal" class="modal-overlay">
+        <div class="modal-card">
+            <span class="modal-close" onclick="closeRoomModal()">&times;</span>
+            <h3 id="modalRoomTitle" style="margin-top:0; color:#2c3e50;">Room Details</h3>
+            <p id="modalRoomMeta" style="color:#666; font-size:0.95rem;"></p>
+
+            <!-- Simulated 3D LiDAR Viewer Canvas -->
+            <div class="room-3d-preview">
+                [ 🧊 Interactive 3D LiDAR Point-Cloud View ]
+            </div>
+
+            <h4>AI Identified Surplus Objects:</h4>
+            <ul id="modalItemList" style="line-height: 1.6;"></ul>
+
+            <button class="btn-success" style="width: 100%; margin-top: 15px;" onclick="alert('Exporting items to your active inventory...')">
+                + Auto-Publish Identified Items to Inventory
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab Switching & Modal Script -->
+    <script>
+        function switchTab(tabName) {
+            // Hide all tab panels
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            // Remove active class from menu buttons
+            document.querySelectorAll('.sidebar-menu .menu-btn').forEach(btn => {
+                if (btn.tagName === 'BUTTON') btn.classList.remove('active');
+            });
+
+            // Show selected panel and activate button
+            document.getElementById('tab-' + tabName).classList.add('active');
+            document.getElementById('btn-' + tabName).classList.add('active');
+        }
+
+        function openRoomModal(title, count, date, items) {
+            document.getElementById('modalRoomTitle').innerText = '📡 Room: ' + title;
+            document.getElementById('modalRoomMeta').innerText = count + ' objects detected via spatial LiDAR scan on ' + date + '.';
+
+            const itemList = document.getElementById('modalItemList');
+            itemList.innerHTML = '';
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.innerText = item;
+                itemList.appendChild(li);
+            });
+
+            document.getElementById('roomModal').style.display = 'flex';
+        }
+
+        function closeRoomModal() {
+            document.getElementById('roomModal').style.display = 'none';
+        }
+
+        function handleLidarUpload() {
+            const fileInput = document.getElementById('lidarFileInput');
+            if (fileInput.files.length > 0) {
+                alert('Uploaded LiDAR File: ' + fileInput.files[0].name + '\nProcessing spatial room model with OCI AI...');
+            }
+        }
+    </script>
 
 </body>
 </html>
