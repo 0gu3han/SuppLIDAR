@@ -251,7 +251,7 @@ def _item_dict(item):
         "description":  item.description or "",
         "category":     item.category,
         "status":       item.status,
-        "condition":    meta.get("condition", "good"),
+        "condition":    item.condition,
         "quantity":     meta.get("quantity", 1),
         "weight_kg":    meta.get("weight_kg", 0.0),
         "photo_url":    meta.get("photo_url", ""),
@@ -308,6 +308,7 @@ def create_item():
         description=data.get("description", ""),
         category=data.get("category", "other"),
         status=data.get("status", "in_use"),
+        condition=data.get("condition", "good"),
         custom_metadata=meta,
     )
     db.session.add(item)
@@ -340,7 +341,7 @@ def item_photo(item_id):
     meta = dict(item.custom_metadata or {})
     meta["photo_url"] = photo_url
     if structured.get("condition"):
-        meta["condition"] = structured["condition"]
+        item.condition = structured["condition"]
     item.custom_metadata = meta
     db.session.commit()
 

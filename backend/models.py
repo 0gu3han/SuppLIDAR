@@ -87,7 +87,8 @@ class Item(db.Model):
     category        = db.Column(db.String(100), nullable=False, index=True)
     # "available" | "requested" | "borrowed" | "gone"
     status          = db.Column(db.String(50), nullable=False, default="available")
-    # Stores OCI Vision labels, condition, weight, photo_url, embedding, etc.
+    condition       = db.Column(db.String(50), nullable=False, default="good")
+    # Stores OCI Vision labels, weight, photo_url, embedding, etc.
     custom_metadata = db.Column(db.JSON, nullable=True)
     created_at      = db.Column(db.DateTime, default=utc_now)
 
