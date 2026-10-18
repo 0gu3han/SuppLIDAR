@@ -124,13 +124,28 @@ export default function ItemsPage({ user }) {
             {filtered.map((item) => (
               <div key={item.id} className="room-card" style={{ cursor: 'default' }}>
                 <div style={{
-                  height: 120, background: 'var(--surface-high)',
+                  height: 140, background: 'var(--surface-high)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  borderRadius: '8px 8px 0 0',
+                  borderRadius: '8px 8px 0 0', overflow: 'hidden',
                 }}>
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--outline-variant)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                  </svg>
+                  {item.photo_url ? (
+                    <img
+                      src={item.photo_url}
+                      alt={item.name || item.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
+                    />
+                  ) : null}
+                  <div style={{
+                    display: item.photo_url ? 'none' : 'flex',
+                    width: '100%', height: '100%',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--outline-variant)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                  </div>
                 </div>
                 <div className="room-card-footer" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: '10px 12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>

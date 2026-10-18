@@ -336,7 +336,8 @@ def item_photo(item_id):
     if structured.get("category"):
         item.category = structured["category"]
 
-    meta = item.custom_metadata or {}
+    # Copy into a new dict so SQLAlchemy detects the JSON column as modified
+    meta = dict(item.custom_metadata or {})
     meta["photo_url"] = photo_url
     if structured.get("condition"):
         meta["condition"] = structured["condition"]
